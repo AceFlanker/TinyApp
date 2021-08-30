@@ -7,7 +7,7 @@ const generateRandomString = function() {
   const alphanumberic = 'abcdefghijklmnopqrstuvwxyz0123456789';
   let randStr = '';
   for (let i = 0; i < 6; i++) {
-    let randNum = Math.floor(Math.random() * 36);
+    let randNum = Math.floor(Math.random() * alphanumberic.length);
     randStr += alphanumberic[randNum];
   }
   return randStr;
@@ -40,8 +40,16 @@ app.get('/urls', (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
-  console.log(req.body);  // Log the POST request body to the console
-  res.send("Ok");         // Respond with 'Ok' (we will replace this)
+  console.log(req.body);
+  if (req.body.longURL) {
+    const shortURL = generateRandomString();
+    urlDatabase[shortURL] = req.body.longURL;
+    // const templateVars = { shortURL: randURL, longURL: req.body.longURL };
+    // res.render('urls_show', templateVars);
+    res.redirect(`/urls/${shortURL}`);
+  } else {
+    res.send('Okay!');
+  }
 });
 
 app.get("/urls/new", (req, res) => {
