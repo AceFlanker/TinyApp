@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/AceFlanker/TinyApp/issues"
   },
-  "homepage": "https://github.com/AceFlanker/TinyApp#readme"
+  "homepage": "https://github.com/AceFlanker/TinyApp#readme",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
 }
