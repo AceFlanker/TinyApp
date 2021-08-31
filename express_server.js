@@ -2,8 +2,12 @@ const express = require("express");
 const app = express();
 const PORT = 8080;
 const bodyParser = require("body-parser");
-const cookieParser = require('cookie-parser')
+const cookieParser = require('cookie-parser');
+app.use(bodyParser.urlencoded({extended: true}));
+app.use(cookieParser());
+app.set("view engine", "ejs");
 
+////
 const generateRandomString = function() {
   const alphanumberic = 'abcdefghijklmnopqrstuvwxyz0123456789';
   let randStr = '';
@@ -16,16 +20,25 @@ const generateRandomString = function() {
 
 const schemeNegCheck = /^([A-Za-z]+.)+[A-Z-a-z]+(\/?$|\/.+$)/; // Checks if the URL has a scheme/protocol specified
 
-
-app.use(bodyParser.urlencoded({extended: true}));
-app.use(cookieParser());
-
-app.set("view engine", "ejs");
+//// Databases
 
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
 };
+
+const userDatabase = { 
+  "admin0": {
+    id: "admin0", 
+    email: "this_is_an@email.com", 
+    password: "leavemealone"
+  },
+ "user2RandomID": {
+    id: "user2RandomID", 
+    email: "user2@example.com", 
+    password: "dishwasher-funk"
+  }
+}
 
 //// GET REQUESTS
 
@@ -112,14 +125,17 @@ app.post("/logout", (req, res) => {
 
 // 
 app.post("/urls/register", (req, res) => {
-  const shortURL = req.params.shortURL;
-  let newlongURL;
-  if (schemeNegCheck.test(req.body.edit)) {
-    newlongURL = 'http://' + req.body.edit;
-  } else {
-    newlongURL = req.body.edit;
-  }
-  urlDatabase[shortURL] = newlongURL;
+  console.log(userDatabase);
+  const regEmail = req.body.email;
+  const regPassword = req.body.password;
+  const generatedID = generateRandomString();
+  userDatabase[generatedID] = {
+    id: generatedID,
+    email: regEmail,
+    password: regPassword
+  };
+  console.log(userDatabase);
+  res.cookie('username', generatedID);
   res.redirect('/urls')
 });
 
