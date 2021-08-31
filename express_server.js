@@ -41,6 +41,12 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_new", templateVars);
 });
 
+// /urls/register => urls_register
+app.get('/urls/register', (req, res) => {
+  const templateVars = { username: req.cookies["username"] };
+  res.render('urls_register', templateVars);
+});
+
 // /u/[shortURL]=> [longURL] | Redirecting Page to an External URL
 app.get("/u/:shortURL", (req, res) => {
   const longURL = urlDatabase[req.params.shortURL];
@@ -52,7 +58,6 @@ app.get("/urls/:shortURL", (req, res) => {
   const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], username: req.cookies["username"] };
   res.render("urls_show", templateVars);
 });
-
 
 //// POST REQUESTS
 // Generating new data after user enters a new URL and redirecting to /urls
@@ -74,7 +79,6 @@ app.post("/urls", (req, res) => {
 
 // Deleting an URL from database as per user request and redirecting to /urls
 app.post("/urls/:shortURL/delete", (req, res) => {
-  console.log(req)
   const shortURL = req.params.shortURL;
   delete urlDatabase[shortURL];
   res.redirect('/urls')
@@ -82,7 +86,6 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 
 // Updating URL database after user edits an existing URL
 app.post("/urls/:shortURL/edit", (req, res) => {
-  console.log(req)
   const shortURL = req.params.shortURL;
   let newlongURL;
   if (schemeNegCheck.test(req.body.edit)) {
@@ -105,6 +108,19 @@ app.post("/login", (req, res) => {
 app.post("/logout", (req, res) => {
   res.clearCookie('username');
   res.redirect('/urls');
+});
+
+// 
+app.post("/urls/register", (req, res) => {
+  const shortURL = req.params.shortURL;
+  let newlongURL;
+  if (schemeNegCheck.test(req.body.edit)) {
+    newlongURL = 'http://' + req.body.edit;
+  } else {
+    newlongURL = req.body.edit;
+  }
+  urlDatabase[shortURL] = newlongURL;
+  res.redirect('/urls')
 });
 
 app.listen(PORT, () => {
