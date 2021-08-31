@@ -63,41 +63,28 @@ app.get("/u/:shortURL", (req, res) => {
 });
 
 // POST requests
-// app.post("/urls", (req, res) => {
-//   console.log(req.body);
-//   if (req.body.longURL) {
-//     let longURL;
-//     if (schemeNegCheck.test(req.body.longURL)) {
-//       longURL = 'http://' + req.body.longURL;
-//     } else {
-//       longURL = req.body.longURL;
-//     }
-//     const shortURL = generateRandomString();
-//     urlDatabase[shortURL] = longURL;
-//     res.redirect(`/urls/${shortURL}`);
-//   } else {
-//     res.send('Okay!');
-//   }
-// });
+app.post("/urls", (req, res) => {
+  console.log(req.body);
+  if (req.body.longURL) {
+    let longURL;
+    if (schemeNegCheck.test(req.body.longURL)) {
+      longURL = 'http://' + req.body.longURL;
+    } else {
+      longURL = req.body.longURL;
+    }
+    const shortURL = generateRandomString();
+    urlDatabase[shortURL] = longURL;
+    res.redirect(`/urls/${shortURL}`);
+  } else {
+    res.send('Okay!');
+  }
+});
 
 app.post("/urls/:shortURL/delete", (req, res) => {
   console.log(req.params.shortURL);
   const shortURL = req.params.shortURL;
   delete urlDatabase[shortURL];
   res.redirect('/urls')
-  // if (req.body.longURL) {
-  //   let longURL;
-  //   if (schemeNegCheck.test(req.body.longURL)) {
-  //     longURL = 'http://' + req.body.longURL;
-  //   } else {
-  //     longURL = req.body.longURL;
-  //   }
-  //   const shortURL = generateRandomString();
-  //   urlDatabase[shortURL] = longURL;
-  //   res.redirect(`/urls/${shortURL}`);
-  // } else {
-  //   res.send('Okay!');
-  // }
 });
 
 
