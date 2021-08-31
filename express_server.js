@@ -87,6 +87,19 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   res.redirect('/urls')
 });
 
+app.post("/urls/:shortURL/edit", (req, res) => {
+  console.log(req.body);
+  const shortURL = req.params.shortURL;
+  let newlongURL;
+  if (schemeNegCheck.test(req.body.edit)) {
+    newlongURL = 'http://' + req.body.edit;
+  } else {
+    newlongURL = req.body.edit;
+  }
+  urlDatabase[shortURL] = newlongURL;
+  res.redirect('/urls')
+});
+
 
 
 app.listen(PORT, () => {
