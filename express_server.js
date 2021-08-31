@@ -7,7 +7,9 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieParser());
 app.set("view engine", "ejs");
 
-////
+//// Helper Functins ////
+
+// Random 6-char Alphanumeral Generator
 const generateRandomString = function() {
   const alphanumberic = 'abcdefghijklmnopqrstuvwxyz0123456789';
   let randStr = '';
@@ -18,9 +20,21 @@ const generateRandomString = function() {
   return randStr;
 }
 
-const schemeNegCheck = /^([A-Za-z]+.)+[A-Z-a-z]+(\/?$|\/.+$)/; // Checks if the URL has a scheme/protocol specified
+// Regexp that checks if the URL has a scheme/protocol specified
+const schemeNegCheck = /^([A-Za-z]+.)+[A-Z-a-z]+(\/?$|\/.+$)/; 
 
-//// Databases
+// emailCheck
+
+const emailCheck = function(newRegEmail) {
+  for (const userObj in userDatabase) {
+    if (userDatabase[userObj].email === newRegEmail) {
+      return false;
+    }
+  }
+  return true;
+}
+
+//// Databases ////
 
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
@@ -40,7 +54,7 @@ const userDatabase = {
   }
 }
 
-//// GET REQUESTS
+//// GET REQUESTS ////
 
 // /urls => urls_index | My URLs (TinyApp Homepage)
 app.get('/urls', (req, res) => {
@@ -77,7 +91,9 @@ app.get("/urls/:shortURL", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
-//// POST REQUESTS
+//// POST REQUESTS ////
+
+// Edit redirection
 // Generating new data after user enters a new URL and redirecting to /urls
 app.post("/urls", (req, res) => {
   if (req.body.longURL) {
@@ -95,6 +111,7 @@ app.post("/urls", (req, res) => {
   }
 });
 
+// Delete
 // Deleting an URL from database as per user request and redirecting to /urls
 app.post("/urls/:shortURL/delete", (req, res) => {
   const shortURL = req.params.shortURL;
@@ -102,6 +119,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   res.redirect('/urls')
 });
 
+// Edit
 // Updating URL database after user edits an existing URL
 app.post("/urls/:shortURL/edit", (req, res) => {
   const shortURL = req.params.shortURL;
@@ -115,6 +133,7 @@ app.post("/urls/:shortURL/edit", (req, res) => {
   res.redirect('/urls')
 });
 
+// Log in
 // Setting a cookie per registered username and redirecting to /urls 
 app.post("/login", (req, res) => {
   const subUsername = req.body.username;
@@ -122,26 +141,32 @@ app.post("/login", (req, res) => {
   res.redirect('/urls');
 });
 
+// Log out
 // Clearing user cookie per user log out and redirecting to /urls 
 app.post("/logout", (req, res) => {
   res.clearCookie('user_id');
   res.redirect('/urls');
 });
 
-// 
+
+// Registration
+// Creating a new user entry in userDatabase per user registration and redirecting to /urls
 app.post("/urls/register", (req, res) => {
-  console.log(userDatabase);
-  const regEmail = req.body.email;
-  const regPassword = req.body.password;
-  const generatedID = generateRandomString();
-  userDatabase[generatedID] = {
-    id: generatedID,
-    email: regEmail,
-    password: regPassword
-  };
-  console.log(userDatabase);
-  res.cookie('user_id', generatedID);
-  res.redirect('/urls')
+  if (req.body.email === '' || req.body.user === '' || !emailCheck(req.body.email)) {
+    res.sendStatus(400);
+  } else {
+    const regEmail = req.body.email;
+    const regPassword = req.body.password;
+    const generatedID = generateRandomString();
+    userDatabase[generatedID] = {
+      id: generatedID,
+      email: regEmail,
+      password: regPassword
+    };
+    console.log(userDatabase);
+    res.cookie('user_id', generatedID);
+    res.redirect('/urls')
+  }
 });
 
 app.listen(PORT, () => {
