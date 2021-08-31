@@ -19,10 +19,11 @@
     <div class="card-footer text-muted">
       <h3>Edit</h3>
       <form method="POST" action="/urls/<%= shortURL  %>/edit" name="edit" id="edit">
-        <label for="edit">New URL:</label>
-        <input type="text" id="edit" name="edit">
-        <button type="submit" class="btn btn-primary" value="Submit">Submit</button>
+        <label form="edit">New URL:</label>
+        <input type="text" name="edit">
+        <button form="edit" type="submit" class="btn btn-primary" name="edit" value="submit">Submit</button>
       </form>
+
     </div>
   </div>
   
