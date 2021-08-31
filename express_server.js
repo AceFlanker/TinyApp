@@ -71,11 +71,18 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_new", templateVars);
 });
 
-// /urls/register => urls_register
-app.get('/urls/register', (req, res) => {
+// /register => urls_register
+app.get('/register', (req, res) => {
   const userInfo = userDatabase[req.cookies["user_id"]];
   const templateVars = { user: userInfo }
   res.render('urls_register', templateVars);
+});
+
+// /login =>  | 
+app.get("/login", (req, res) => {
+  const userInfo = userDatabase[req.cookies["user_id"]];
+  const templateVars = { user: userInfo }
+  res.render('urls_login', templateVars);
 });
 
 // /u/[shortURL]=> [longURL] | Redirecting Page to an External URL
@@ -151,7 +158,7 @@ app.post("/logout", (req, res) => {
 
 // Registration
 // Creating a new user entry in userDatabase per user registration and redirecting to /urls
-app.post("/urls/register", (req, res) => {
+app.post("/register", (req, res) => {
   if (req.body.email === '' || req.body.user === '' || !emailCheck(req.body.email)) {
     res.sendStatus(400);
   } else {
