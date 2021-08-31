@@ -16,7 +16,9 @@ const generateRandomString = function() {
 
 const schemeNegCheck = /^([A-Za-z]+.)+[A-Z-a-z]+(\/?$|\/.+$)/; // Checks if the URL has a scheme/protocol specified
 
+
 app.use(bodyParser.urlencoded({extended: true}));
+app.use(cookieParser());
 
 app.set("view engine", "ejs");
 
@@ -29,13 +31,13 @@ const urlDatabase = {
 
 // /urls => urls_index | My URLs (TinyApp Homepage)
 app.get('/urls', (req, res) => {
-  const templateVars = { urls: urlDatabase, username:req.cookies["username"] };
+  const templateVars = { urls: urlDatabase, username: req.cookies["username"] };
   res.render('urls_index', templateVars);
 });
 
 // /urls/new => urls_new | Create New URL
 app.get("/urls/new", (req, res) => {
-  const templateVars = { username:req.cookies["username"] }
+  const templateVars = { username: req.cookies["username"] }
   res.render("urls_new", templateVars);
 });
 
@@ -48,7 +50,7 @@ app.get("/u/:shortURL", (req, res) => {
 
 // /urls/[shortURL] => urls_show | Individual Registered URL Info / Edit Page
 app.get("/urls/:shortURL", (req, res) => {
-  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], username:req.cookies["username"] };
+  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], username: req.cookies["username"] };
   res.render("urls_show", templateVars);
 });
 
