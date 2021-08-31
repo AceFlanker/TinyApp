@@ -14,8 +14,6 @@ const generateRandomString = function() {
   return randStr;
 }
 
-let subUsername;
-
 const schemeNegCheck = /^([A-Za-z]+.)+[A-Z-a-z]+(\/?$|\/.+$)/; // Checks if the URL has a scheme/protocol specified
 
 
@@ -33,13 +31,13 @@ const urlDatabase = {
 
 // /urls => urls_index | My URLs (TinyApp Homepage)
 app.get('/urls', (req, res) => {
-  const templateVars = { urls: urlDatabase, username: subUsername };
+  const templateVars = { urls: urlDatabase, username: req.cookies["username"] };
   res.render('urls_index', templateVars);
 });
 
 // /urls/new => urls_new | Create New URL
 app.get("/urls/new", (req, res) => {
-  const templateVars = { username: subUsername }
+  const templateVars = { username: req.cookies["username"] }
   res.render("urls_new", templateVars);
 });
 
@@ -51,13 +49,12 @@ app.get("/u/:shortURL", (req, res) => {
 
 // /urls/[shortURL] => urls_show | Individual Registered URL Info / Edit Page
 app.get("/urls/:shortURL", (req, res) => {
-  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], username: subUsername };
+  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], username: req.cookies["username"] };
   res.render("urls_show", templateVars);
 });
 
 
 //// POST REQUESTS
-
 // Generating new data after user enters a new URL and redirecting to /urls
 app.post("/urls", (req, res) => {
   if (req.body.longURL) {
@@ -97,7 +94,7 @@ app.post("/urls/:shortURL/edit", (req, res) => {
 
 // Setting a cookie per registered username and redirecting to /urls 
 app.post("/login", (req, res) => {
-  subUsername = req.body.username;
+  let subUsername = req.body.username;
   res.cookie('username', subUsername);
   res.redirect('/urls');
 });
