@@ -29,13 +29,17 @@
             <td><%= url %></td>
             <td><%= urls[url] %></td>
             <td>
-              <form method="GET" action="/urls/<%= url  %>" name="edit" id="edit">
-                <button form="edit" type="submit" name="edit"  value="edit" class="btn btn-outline-primary">Edit</button>
+              <!-- <% const editURL = '/urls/' + url; %>
+              <% const editID = 'edit_' + url; %> -->
+              <form method="GET" action="/urls/<%= url  %>" name="edit" id="edit_<%= url %>">
+                <button form="edit_<%= url %>" type="submit" name="edit"  value="edit" class="btn btn-outline-primary">Edit</button>
               </form>
             </td>
             <td>
-              <form method="POST" action="/urls/<%= url  %>/delete" name="delete" id="delete">
-                <button form="delete" type="submit" name="delete" class="btn btn-outline-danger">Delete</button>
+              <% const deleteURL = '/urls/delete/' + url; %>
+              <% const deleteID = 'delete_' + url; %>
+              <form method="POST" action="/urls/<%= url %>/delete" name="delete" id="delete_<%= url %>">
+                <button form="delete_<%= url %>" type="submit" name="delete" class="btn btn-outline-danger">Delete</button>
               </form>
             </td>
           </tr>

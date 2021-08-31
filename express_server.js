@@ -74,6 +74,7 @@ app.post("/urls", (req, res) => {
 
 // Deleting an URL from database as per user request and redirecting to /urls
 app.post("/urls/:shortURL/delete", (req, res) => {
+  console.log(req)
   const shortURL = req.params.shortURL;
   delete urlDatabase[shortURL];
   res.redirect('/urls')
@@ -81,6 +82,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 
 // Updating URL database after user edits an existing URL
 app.post("/urls/:shortURL/edit", (req, res) => {
+  console.log(req)
   const shortURL = req.params.shortURL;
   let newlongURL;
   if (schemeNegCheck.test(req.body.edit)) {
