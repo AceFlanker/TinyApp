@@ -96,7 +96,7 @@ app.post("/urls/:shortURL/edit", (req, res) => {
 
 // Setting a cookie per registered username and redirecting to /urls 
 app.post("/login", (req, res) => {
-  let subUsername = req.body.username;
+  const subUsername = req.body.username;
   res.cookie('username', subUsername);
   res.redirect('/urls');
 });
