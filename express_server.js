@@ -25,45 +25,36 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
-// GET requests
-app.get("/", (req, res) => {
-  res.send("Hello!");
-});
+//// GET REQUESTS
 
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
-});
-
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
-});
-
+// /urls => urls_index | My URLs (TinyApp Homepage)
 app.get('/urls', (req, res) => {
-  const templateVars = { urls: urlDatabase };
+  const templateVars = { urls: urlDatabase, username:req.cookies["username"] };
   res.render('urls_index', templateVars);
 });
 
+// /urls/new => urls_new | Create New URL
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
+  const templateVars = { username:req.cookies["username"] }
+  res.render("urls_new", templateVars);
 });
 
+// /u/[shortURL]=> [longURL] | Redirecting Page to an External URL
 app.get("/u/:shortURL", (req, res) => {
   console.log(req.params.shortURL);
   const longURL = urlDatabase[req.params.shortURL];
   res.redirect(longURL);
 });
 
+// /urls/[shortURL] => urls_show | Individual Registered URL Info / Edit Page
 app.get("/urls/:shortURL", (req, res) => {
-  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], username:req.cookies["username"] };
   res.render("urls_show", templateVars);
 });
 
-app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL];
-  res.redirect(longURL);
-});
 
-// POST requests
+//// POST REQUESTS
+// Generating new data after user enters a new URL and redirecting to /urls
 app.post("/urls", (req, res) => {
   console.log(req.body);
   if (req.body.longURL) {
@@ -81,6 +72,7 @@ app.post("/urls", (req, res) => {
   }
 });
 
+// Deleting an URL from database as per user request and redirecting to /urls
 app.post("/urls/:shortURL/delete", (req, res) => {
   console.log(req.params.shortURL);
   const shortURL = req.params.shortURL;
@@ -88,6 +80,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   res.redirect('/urls')
 });
 
+// Updating URL database after user edits an existing URL
 app.post("/urls/:shortURL/edit", (req, res) => {
   console.log(req.body);
   const shortURL = req.params.shortURL;
@@ -101,6 +94,7 @@ app.post("/urls/:shortURL/edit", (req, res) => {
   res.redirect('/urls')
 });
 
+// Setting a cookie per registered username and redirecting to /urls 
 app.post("/login", (req, res) => {
   console.log(req.body);
   let subUsername = req.body.username;
