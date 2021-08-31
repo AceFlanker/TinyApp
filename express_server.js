@@ -105,6 +105,13 @@ app.post("/login", (req, res) => {
   res.redirect('/urls');
 });
 
+// Clearing user cookie per user log out and redirecting to /urls 
+app.post("/logout", (req, res) => {
+  console.log(req.body);
+  res.clearCookie('username');
+  res.redirect('/urls');
+});
+
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
