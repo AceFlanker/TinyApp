@@ -33,7 +33,7 @@ const userDatabase = {
     email: "this_is_an@email.com", 
     password: "leavemealone"
   },
- "user2RandomID": {
+ "Tesla": {
     id: "user2RandomID", 
     email: "user2@example.com", 
     password: "dishwasher-funk"
@@ -44,19 +44,23 @@ const userDatabase = {
 
 // /urls => urls_index | My URLs (TinyApp Homepage)
 app.get('/urls', (req, res) => {
-  const templateVars = { urls: urlDatabase, username: req.cookies["username"] };
+  console.log('cookie:', req.cookies)
+  const userInfo = userDatabase[req.cookies["user_id"]];
+  const templateVars = { urls: urlDatabase, user: userInfo };
   res.render('urls_index', templateVars);
 });
 
 // /urls/new => urls_new | Create New URL
 app.get("/urls/new", (req, res) => {
-  const templateVars = { username: req.cookies["username"] }
+  const userInfo = userDatabase[req.cookies["user_id"]];
+  const templateVars = { user: userInfo }
   res.render("urls_new", templateVars);
 });
 
 // /urls/register => urls_register
 app.get('/urls/register', (req, res) => {
-  const templateVars = { username: req.cookies["username"] };
+  const userInfo = userDatabase[req.cookies["user_id"]];
+  const templateVars = { user: userInfo }
   res.render('urls_register', templateVars);
 });
 
@@ -68,7 +72,8 @@ app.get("/u/:shortURL", (req, res) => {
 
 // /urls/[shortURL] => urls_show | Individual Registered URL Info / Edit Page
 app.get("/urls/:shortURL", (req, res) => {
-  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], username: req.cookies["username"] };
+  const userInfo = userDatabase[req.cookies["user_id"]];
+  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], user: userInfo };
   res.render("urls_show", templateVars);
 });
 
@@ -113,13 +118,13 @@ app.post("/urls/:shortURL/edit", (req, res) => {
 // Setting a cookie per registered username and redirecting to /urls 
 app.post("/login", (req, res) => {
   const subUsername = req.body.username;
-  res.cookie('username', subUsername);
+  res.cookie('user_id', subUsername);
   res.redirect('/urls');
 });
 
 // Clearing user cookie per user log out and redirecting to /urls 
 app.post("/logout", (req, res) => {
-  res.clearCookie('username');
+  res.clearCookie('user_id');
   res.redirect('/urls');
 });
 
@@ -135,7 +140,7 @@ app.post("/urls/register", (req, res) => {
     password: regPassword
   };
   console.log(userDatabase);
-  res.cookie('username', generatedID);
+  res.cookie('user_id', generatedID);
   res.redirect('/urls')
 });
 
