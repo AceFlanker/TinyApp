@@ -88,14 +88,14 @@ app.get("/urls/new", (req, res) => {
 app.get('/register', (req, res) => {
   const templateVars = { user:undefined };
   cookieCheck(req.cookies.user_id, templateVars);
-  res.render('urls_register', templateVars);
+  templateVars.user ? res.redirect('urls') : res.render('urls_register', templateVars);
 });
 
 // /login =>  urls_login | Login page 
 app.get("/login", (req, res) => {
   const templateVars = { user:undefined };
   cookieCheck(req.cookies.user_id, templateVars);
-  res.render('urls_login', templateVars);
+  templateVars.user ? res.redirect('urls') : res.render('urls_login', templateVars);
 });
 
 // /u/[shortURL]=> [longURL] | Redirecting Page to an External URL
@@ -160,7 +160,7 @@ app.post("/login", (req, res) => {
   const logPassword = req.body.password;
   const logUserID = emailCheck(logEmail)[1];
   if (!emailCheck(logEmail)[0] || userDatabase[logUserID].password !== logPassword) {
-    res.sendStatus(403);
+    res.sendStatus(403); // "Forbidden"
   } else {
     res.cookie('user_id', logUserID);
     res.redirect('/urls');
@@ -179,7 +179,7 @@ app.post("/logout", (req, res) => {
 // Creating a new user entry in userDatabase per user registration and redirecting to /urls
 app.post("/register", (req, res) => {
   if (req.body.email === '' || req.body.password === '' || emailCheck(req.body.email)[0]) {
-    res.sendStatus(400);
+    res.sendStatus(400); // "Bad Request"
   } else {
     const regEmail = req.body.email;
     const regPassword = req.body.password;
