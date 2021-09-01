@@ -23,16 +23,30 @@ const generateRandomString = function() {
 // Regexp that checks if the URL has a scheme/protocol specified
 const schemeNegCheck = /^([A-Za-z]+.)+[A-Z-a-z]+(\/?$|\/.+$)/; 
 
-// emailCheck
 
-const emailCheck = function(newRegEmail) {
-  for (const userObj in userDatabase) {
-    if (userDatabase[userObj].email === newRegEmail) {
-      return false;
+// Object Value Check
+const objCheck = function(queryObj, queryKey, queryValue) {
+  for (const key in queryObj) {
+    if (queryObj[key][queryKey] === queryValue) {
+      return [true, key];
     }
   }
-  return true;
+  return false;
 }
+
+// Email Check
+const emailCheck = function(queryEmail) {
+  return objCheck(userDatabase, 'email', queryEmail);
+};
+
+// Cookie Check
+const cookieCheck = function(cookie, templateObj) {
+  if (cookie) {
+    const user_id = cookie
+    templateObj.user = userDatabase[user_id];
+  }
+}
+
 
 //// Databases ////
 
@@ -42,46 +56,45 @@ const urlDatabase = {
 };
 
 const userDatabase = { 
-  "admin0": {
-    id: "admin0", 
-    email: "this_is_an@email.com", 
-    password: "leavemealone"
-  },
- "Tesla": {
-    id: "user2RandomID", 
-    email: "user2@example.com", 
-    password: "dishwasher-funk"
-  }
+//   "admin0": {
+//     id: "admin0", 
+//     email: "this_is_an@email.com", 
+//     password: "leavemealone"
+//   },
+//  "Tesla": {
+//     id: "user2RandomID", 
+//     email: "user2@example.com", 
+//     password: "aaa"
+//   }
 }
 
 //// GET REQUESTS ////
 
 // /urls => urls_index | My URLs (TinyApp Homepage)
 app.get('/urls', (req, res) => {
-  console.log('cookie:', req.cookies)
-  const userInfo = userDatabase[req.cookies["user_id"]];
-  const templateVars = { urls: urlDatabase, user: userInfo };
+  const templateVars = { user: undefined, urls: urlDatabase };
+  cookieCheck(req.cookies.user_id, templateVars);
   res.render('urls_index', templateVars);
 });
 
 // /urls/new => urls_new | Create New URL
 app.get("/urls/new", (req, res) => {
-  const userInfo = userDatabase[req.cookies["user_id"]];
-  const templateVars = { user: userInfo }
+  const templateVars = { user:undefined };
+  cookieCheck(req.cookies.user_id, templateVars);
   res.render("urls_new", templateVars);
 });
 
 // /register => urls_register
 app.get('/register', (req, res) => {
-  const userInfo = userDatabase[req.cookies["user_id"]];
-  const templateVars = { user: userInfo }
+  const templateVars = { user:undefined };
+  cookieCheck(req.cookies.user_id, templateVars);
   res.render('urls_register', templateVars);
 });
 
-// /login =>  | 
+// /login =>  urls_login | Login page 
 app.get("/login", (req, res) => {
-  const userInfo = userDatabase[req.cookies["user_id"]];
-  const templateVars = { user: userInfo }
+  const templateVars = { user:undefined };
+  cookieCheck(req.cookies.user_id, templateVars);
   res.render('urls_login', templateVars);
 });
 
@@ -91,17 +104,17 @@ app.get("/u/:shortURL", (req, res) => {
   res.redirect(longURL);
 });
 
-// /urls/[shortURL] => urls_show | Individual Registered URL Info / Edit Page
+// /urls/[shortURL] => urls_show | Individual Registered URL Email / Edit Page
 app.get("/urls/:shortURL", (req, res) => {
-  const userInfo = userDatabase[req.cookies["user_id"]];
-  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], user: userInfo };
+  const templateVars = { user:undefined, shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+  cookieCheck(req.cookies.user_id, templateVars);
   res.render("urls_show", templateVars);
 });
 
 //// POST REQUESTS ////
 
-// Edit redirection
-// Generating new data after user enters a new URL and redirecting to /urls
+// Short URL Generation
+// Generating new data after user enters a new URL and redirecting to /urls/shortURL
 app.post("/urls", (req, res) => {
   if (req.body.longURL) {
     let longURL;
@@ -140,15 +153,21 @@ app.post("/urls/:shortURL/edit", (req, res) => {
   res.redirect('/urls')
 });
 
-// Log in
-// Setting a cookie per registered username and redirecting to /urls 
+// Log In
+// Setting a cookie per randomly generated user id and redirecting to /urls 
 app.post("/login", (req, res) => {
-  const subUsername = req.body.username;
-  res.cookie('user_id', subUsername);
-  res.redirect('/urls');
+  const logEmail = req.body.email;
+  const logPassword = req.body.password;
+  const logUserID = emailCheck(logEmail)[1];
+  if (!emailCheck(logEmail)[0] || userDatabase[logUserID].password !== logPassword) {
+    res.sendStatus(403);
+  } else {
+    res.cookie('user_id', logUserID);
+    res.redirect('/urls');
+  }
 });
 
-// Log out
+// Log Out
 // Clearing user cookie per user log out and redirecting to /urls 
 app.post("/logout", (req, res) => {
   res.clearCookie('user_id');
@@ -159,7 +178,7 @@ app.post("/logout", (req, res) => {
 // Registration
 // Creating a new user entry in userDatabase per user registration and redirecting to /urls
 app.post("/register", (req, res) => {
-  if (req.body.email === '' || req.body.user === '' || !emailCheck(req.body.email)) {
+  if (req.body.email === '' || req.body.password === '' || emailCheck(req.body.email)[0]) {
     res.sendStatus(400);
   } else {
     const regEmail = req.body.email;
@@ -170,7 +189,6 @@ app.post("/register", (req, res) => {
       email: regEmail,
       password: regPassword
     };
-    console.log(userDatabase);
     res.cookie('user_id', generatedID);
     res.redirect('/urls')
   }
