@@ -77,50 +77,70 @@ const shortURLCheck = function(queryShortURL) {
   return false;
 }
 
-// Cookie Template Varaible Check
-const cookieVar = function(cookie, templateObj) {
-  if (cookie) {
-    const user_id = cookie
-    templateObj.user = userDatabase[user_id];
-  }
+const cookieCheck = function(cookieID) {
+  return cookieID ? userDatabase[cookieID] : undefined;
 }
 
+const urlsForUser = function(cookieUserID) {
+  let urlsObj = {}
+  for (const key in urlDatabase) {
+    if (urlDatabase[key].userID === cookieUserID) {
+      urlsObj[key] = urlDatabase[key];
+    }
+  }
+  return urlsObj;
+}
+
+// Cookie Template Varaible Check
+const urlsTemplate = function(cookie, currentURLs, templateObj) {
+  if (cookie) {
+    templateObj.urls = currentURLs;
+  }
+}
 
 
 //// GET REQUESTS ////
 
 // /urls => urls_index | My URLs (TinyApp Homepage)
 app.get('/urls', (req, res) => {
-  const templateVars = { user: undefined, urls: urlDatabase };
-  cookieVar(req.cookies.user_id, templateVars);
-  res.render('urls_index', templateVars);
+  const currentUser = cookieCheck(req.cookies.user_id);
+  if (currentUser) {
+    const userURLs = urlsForUser(req.cookies.user_id);
+    const templateVars = { user: currentUser, urls: {} };
+    urlsTemplate(currentUser, userURLs, templateVars);
+    res.render('urls_index', templateVars);
+  } else {
+    // res.sendStatus(400); // Bad request
+    res.redirect('/login')
+  }
 });
 
 // /urls/new => urls_new | Create New URL
 app.get("/urls/new", (req, res) => {
-  const templateVars = { user: undefined };
-  cookieVar(req.cookies.user_id, templateVars);
+  const currentUser = cookieCheck(req.cookies.user_id);
+  const templateVars = { user: currentUser };
   templateVars.user ? res.render("urls_new", templateVars) : res.redirect('/login');
 });
 
 // /register => urls_register
 app.get('/register', (req, res) => {
-  const templateVars = { user: undefined };
-  cookieVar(req.cookies.user_id, templateVars);
+  const currentUser = cookieCheck(req.cookies.user_id);
+  const templateVars = { user: currentUser };
   templateVars.user ? res.redirect('/urls') : res.render('urls_register', templateVars);
 });
 
 // /login =>  urls_login | Login page 
 app.get("/login", (req, res) => {
-  const templateVars = { user: undefined };
-  cookieVar(req.cookies.user_id, templateVars);
+  const currentUser = cookieCheck(req.cookies.user_id);
+  const templateVars = { user: currentUser };
   templateVars.user ? res.redirect('/urls') : res.render('urls_login', templateVars);
 });
 
 // /u/[shortURL]=> [longURL] | Short URL redirecting Page to an External URL
 app.get("/u/:shortURL", (req, res) => {
-  if (shortURLCheck(req.params.shortURL)) {
-    const longURL = urlDatabase[req.params.shortURL].longURL;
+  const queryShortURL = req.params.shortURL
+  if (shortURLCheck(queryShortURL)) {
+    const longURL = urlDatabase[queryShortURL].longURL;
     res.redirect(longURL);
   } else {
     res.sendStatus(404); // Not found
@@ -129,9 +149,17 @@ app.get("/u/:shortURL", (req, res) => {
 
 // /urls/[shortURL] => urls_show | Individual Registered URL / Edit Page
 app.get("/urls/:shortURL", (req, res) => {
-  const templateVars = { user: undefined, shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL };
-  cookieVar(req.cookies.user_id, templateVars);
-  res.render("urls_show", templateVars);
+  const currentUser = cookieCheck(req.cookies.user_id);
+  const queryShortURL = req.params.shortURL;
+  if (!currentUser) {
+    res.sendStatus(400);
+    // res.redirect('/login');
+  } else if (urlDatabase[queryShortURL].userID === currentUser.id) {
+    const templateVars = { user: currentUser, shortURL: queryShortURL, longURL: urlDatabase[queryShortURL].longURL };
+    res.render("urls_show", templateVars);
+  } else {
+    res.sendStatus(403); // Forbidden
+  }
 });
 
 //// POST REQUESTS ////
@@ -139,21 +167,21 @@ app.get("/urls/:shortURL", (req, res) => {
 // Short URL Generation
 // Generating new data after user enters a new URL and redirecting to /urls/shortURL
 app.post("/urls", (req, res) => {
-  if (req.cookies.user_id) {
-    if (req.body.longURL) {
-      let longURL;
-      if (schemeNegCheck.test(req.body.longURL)) {
-        longURL = 'http://' + req.body.longURL;
-      } else {
-        longURL = req.body.longURL;
-      }
-      const shortURL = generateRandomString();
-      urlDatabase[shortURL] = {
-        longURL: longURL,
-        userID: req.cookies.user_id
-      }
-      res.redirect(`/urls/${shortURL}`);
+  const currentUser = cookieCheck(req.cookies.user_id);
+  if (currentUser) {
+    const newLongURL = req.body.longURL;
+    let longURL;
+    if (schemeNegCheck.test(newLongURL)) {
+      longURL = 'http://' + newLongURL;
+    } else {
+      longURL = newLongURL;
     }
+    const shortURL = generateRandomString();
+    urlDatabase[shortURL] = {
+      longURL: longURL,
+      userID: currentUser.id
+    }
+    res.redirect(`/urls/${shortURL}`);
   } else {
     res.sendStatus(403); // Forbidden
   }
