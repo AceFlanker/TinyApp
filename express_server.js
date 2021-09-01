@@ -7,6 +7,33 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieParser());
 app.set("view engine", "ejs");
 
+
+//// Databases ////
+const userDatabase = { 
+  //   "admin0": {
+  //     id: "admin0", 
+  //     email: "this_is_an@email.com", 
+  //     password: "leavemealone"
+  //   },
+  //  "Tesla": {
+  //     id: "user2RandomID", 
+  //     email: "user2@example.com", 
+  //     password: "aaa"
+  //   }
+  }
+
+const urlDatabase = {
+  // "b2xVn2": {
+  //   longURL: "http://www.lighthouselabs.ca",
+  //   userID: 'nobody'
+  // },
+  // "9sm5xK": {
+  //   longURL: "http://www.google.com",
+  //   userID: 'nobody'
+  // }
+};
+
+
 //// Helper Functins ////
 
 // Random 6-char Alphanumeral Generator
@@ -25,6 +52,7 @@ const schemeNegCheck = /^([A-Za-z]+.)+[A-Z-a-z]+(\/?$|\/.+$)/;
 
 
 // Object Value Check
+// Generic Boolean checking function for objects
 const objCheck = function(queryObj, queryKey, queryValue) {
   for (const key in queryObj) {
     if (queryObj[key][queryKey] === queryValue) {
@@ -34,10 +62,20 @@ const objCheck = function(queryObj, queryKey, queryValue) {
   return false;
 }
 
-// Email Check
+// Email Check <- Object Value Check
 const emailCheck = function(queryEmail) {
   return objCheck(userDatabase, 'email', queryEmail);
 };
+
+// Short URL Check
+const shortURLCheck = function(queryShortURL) {
+  for (const key in urlDatabase) {
+    if (key === queryShortURL) {
+      return true;
+    }
+  }
+  return false;
+}
 
 // Cookie Template Varaible Check
 const cookieVar = function(cookie, templateObj) {
@@ -48,31 +86,6 @@ const cookieVar = function(cookie, templateObj) {
 }
 
 
-//// Databases ////
-
-const urlDatabase = {
-  // "b2xVn2": {
-  //   longURL: "http://www.lighthouselabs.ca",
-  //   userID: 'nobody'
-  // },
-  // "9sm5xK": {
-  //   longURL: "http://www.google.com",
-  //   userID: 'nobody'
-  // }
-};
-
-const userDatabase = { 
-//   "admin0": {
-//     id: "admin0", 
-//     email: "this_is_an@email.com", 
-//     password: "leavemealone"
-//   },
-//  "Tesla": {
-//     id: "user2RandomID", 
-//     email: "user2@example.com", 
-//     password: "aaa"
-//   }
-}
 
 //// GET REQUESTS ////
 
@@ -104,10 +117,14 @@ app.get("/login", (req, res) => {
   templateVars.user ? res.redirect('/urls') : res.render('urls_login', templateVars);
 });
 
-// /u/[shortURL]=> [longURL] | Redirecting Page to an External URL
+// /u/[shortURL]=> [longURL] | Short URL redirecting Page to an External URL
 app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL].longURL;
-  res.redirect(longURL);
+  if (shortURLCheck(req.params.shortURL)) {
+    const longURL = urlDatabase[req.params.shortURL].longURL;
+    res.redirect(longURL);
+  } else {
+    res.sendStatus(404); // Not found
+  }
 });
 
 // /urls/[shortURL] => urls_show | Individual Registered URL / Edit Page
@@ -132,7 +149,7 @@ app.post("/urls", (req, res) => {
       }
       const shortURL = generateRandomString();
       urlDatabase[shortURL] = {
-        longURL,
+        longURL: longURL,
         userID: req.cookies.user_id
       }
       res.redirect(`/urls/${shortURL}`);
