@@ -39,8 +39,8 @@ const emailCheck = function(queryEmail) {
   return objCheck(userDatabase, 'email', queryEmail);
 };
 
-// Cookie Check
-const cookieCheck = function(cookie, templateObj) {
+// Cookie Template Varaible Check
+const cookieVar = function(cookie, templateObj) {
   if (cookie) {
     const user_id = cookie
     templateObj.user = userDatabase[user_id];
@@ -73,29 +73,30 @@ const userDatabase = {
 // /urls => urls_index | My URLs (TinyApp Homepage)
 app.get('/urls', (req, res) => {
   const templateVars = { user: undefined, urls: urlDatabase };
-  cookieCheck(req.cookies.user_id, templateVars);
+  cookieVar(req.cookies.user_id, templateVars);
   res.render('urls_index', templateVars);
 });
 
 // /urls/new => urls_new | Create New URL
 app.get("/urls/new", (req, res) => {
-  const templateVars = { user:undefined };
-  cookieCheck(req.cookies.user_id, templateVars);
-  res.render("urls_new", templateVars);
+  const templateVars = { user: undefined };
+  cookieVar(req.cookies.user_id, templateVars);
+  // templateVars.user ? res.render("urls_new", templateVars) : console.log(2);
+  templateVars.user ? res.render("urls_new", templateVars) : res.redirect('/login');
 });
 
 // /register => urls_register
 app.get('/register', (req, res) => {
-  const templateVars = { user:undefined };
-  cookieCheck(req.cookies.user_id, templateVars);
-  templateVars.user ? res.redirect('urls') : res.render('urls_register', templateVars);
+  const templateVars = { user: undefined };
+  cookieVar(req.cookies.user_id, templateVars);
+  templateVars.user ? res.redirect('/urls') : res.render('urls_register', templateVars);
 });
 
 // /login =>  urls_login | Login page 
 app.get("/login", (req, res) => {
-  const templateVars = { user:undefined };
-  cookieCheck(req.cookies.user_id, templateVars);
-  templateVars.user ? res.redirect('urls') : res.render('urls_login', templateVars);
+  const templateVars = { user: undefined };
+  cookieVar(req.cookies.user_id, templateVars);
+  templateVars.user ? res.redirect('/urls') : res.render('urls_login', templateVars);
 });
 
 // /u/[shortURL]=> [longURL] | Redirecting Page to an External URL
@@ -106,8 +107,8 @@ app.get("/u/:shortURL", (req, res) => {
 
 // /urls/[shortURL] => urls_show | Individual Registered URL Email / Edit Page
 app.get("/urls/:shortURL", (req, res) => {
-  const templateVars = { user:undefined, shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
-  cookieCheck(req.cookies.user_id, templateVars);
+  const templateVars = { user: undefined, shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+  cookieVar(req.cookies.user_id, templateVars);
   res.render("urls_show", templateVars);
 });
 
@@ -116,18 +117,20 @@ app.get("/urls/:shortURL", (req, res) => {
 // Short URL Generation
 // Generating new data after user enters a new URL and redirecting to /urls/shortURL
 app.post("/urls", (req, res) => {
-  if (req.body.longURL) {
-    let longURL;
-    if (schemeNegCheck.test(req.body.longURL)) {
-      longURL = 'http://' + req.body.longURL;
-    } else {
-      longURL = req.body.longURL;
+  if (req.cookies.user_id) {
+    if (req.body.longURL) {
+      let longURL;
+      if (schemeNegCheck.test(req.body.longURL)) {
+        longURL = 'http://' + req.body.longURL;
+      } else {
+        longURL = req.body.longURL;
+      }
+      const shortURL = generateRandomString();
+      urlDatabase[shortURL] = longURL;
+      res.redirect(`/urls/${shortURL}`);
     }
-    const shortURL = generateRandomString();
-    urlDatabase[shortURL] = longURL;
-    res.redirect(`/urls/${shortURL}`);
   } else {
-    res.send('Okay!');
+    res.sendStatus(403);
   }
 });
 
