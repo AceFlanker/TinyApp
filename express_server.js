@@ -8,6 +8,9 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieParser());
 app.set("view engine", "ejs");
 
+const bcrypt = require('bcryptjs');
+
+
 // Regexp that checks if the URL has a scheme/protocol specified
 const schemeNegCheck = /^([A-Za-z]+.)+[A-Z-a-z]+(\/?$|\/.+$)/; 
 
@@ -246,11 +249,13 @@ app.post("/login", (req, res) => {
   const logEmail = req.body.email;
   const logPassword = req.body.password;
   const logUserID = emailCheck(logEmail)[1]; // emailCheck() returns the key (user id) in user database
+  const dbPassword = userDatabase[logUserID].password;
   if (!emailCheck(logEmail)[0]) {
     res.sendStatus(404); // Not found
-  } else if (userDatabase[logUserID].password !== logPassword) {
+  } else if (!bcrypt.compareSync(logPassword, dbPassword)) {
     res.sendStatus(403); // Forbidden
   } else {
+    console.log(dbPassword);
     res.cookie('user_id', logUserID);
     res.redirect('/urls');
   }
@@ -280,7 +285,7 @@ app.post("/register", (req, res) => {
     userDatabase[generatedID] = {
       id: generatedID,
       email: regEmail,
-      password: regPassword
+      password: bcrypt.hashSync(regPassword, 10)
     };
     res.cookie('user_id', generatedID);
     res.redirect('/urls')
