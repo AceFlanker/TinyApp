@@ -3,10 +3,13 @@ const app = express();
 const PORT = 8080;
 const bodyParser = require("body-parser");
 const cookieParser = require('cookie-parser');
+const { query } = require("express");
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieParser());
 app.set("view engine", "ejs");
 
+// Regexp that checks if the URL has a scheme/protocol specified
+const schemeNegCheck = /^([A-Za-z]+.)+[A-Z-a-z]+(\/?$|\/.+$)/; 
 
 //// Databases ////
 const userDatabase = { 
@@ -33,7 +36,6 @@ const urlDatabase = {
   // }
 };
 
-
 //// Helper Functins ////
 
 // Random 6-char Alphanumeral Generator
@@ -47,10 +49,6 @@ const generateRandomString = function() {
   return randStr;
 }
 
-// Regexp that checks if the URL has a scheme/protocol specified
-const schemeNegCheck = /^([A-Za-z]+.)+[A-Z-a-z]+(\/?$|\/.+$)/; 
-
-
 // Object Value Check
 // Generic Boolean checking function for objects
 const objCheck = function(queryObj, queryKey, queryValue) {
@@ -63,11 +61,13 @@ const objCheck = function(queryObj, queryKey, queryValue) {
 }
 
 // Email Check <- Object Value Check
+// Checks if an email already exists in the user database
 const emailCheck = function(queryEmail) {
   return objCheck(userDatabase, 'email', queryEmail);
 };
 
 // Short URL Check
+// Checks if provided short URL exists in the URL database
 const shortURLCheck = function(queryShortURL) {
   for (const key in urlDatabase) {
     if (key === queryShortURL) {
@@ -77,10 +77,17 @@ const shortURLCheck = function(queryShortURL) {
   return false;
 }
 
-const cookieCheck = function(cookieID) {
-  return cookieID ? userDatabase[cookieID] : undefined;
+// Validates short URL ownership
+const validateShortURL = function(cookieID, queryShortURL) {
+  return urlDatabase[queryShortURL].userID === cookieID ? true : false;
 }
 
+// Returns user info object in the user database if user is logged in, undefined if otherwise
+const cookieCheck = function(cookieID) {
+  return cookieID ? userDatabase[cookieID] : undefined;
+} // NOTE: The above returns the ENTIRE USER OBJECT
+
+// Generating a list of user's URLs
 const urlsForUser = function(cookieUserID) {
   let urlsObj = {}
   for (const key in urlDatabase) {
@@ -91,14 +98,14 @@ const urlsForUser = function(cookieUserID) {
   return urlsObj;
 }
 
-// Cookie Template Varaible Check
+// Assigning user's URL list to the a variable of html/ejs' template object
 const urlsTemplate = function(cookie, currentURLs, templateObj) {
   if (cookie) {
     templateObj.urls = currentURLs;
   }
 }
 
-
+//////////////////////////////////////////////////////////////////////////////
 //// GET REQUESTS ////
 
 // /urls => urls_index | My URLs (TinyApp Homepage)
@@ -122,7 +129,7 @@ app.get("/urls/new", (req, res) => {
   templateVars.user ? res.render("urls_new", templateVars) : res.redirect('/login');
 });
 
-// /register => urls_register
+// /register => urls_register | Registration Page
 app.get('/register', (req, res) => {
   const currentUser = cookieCheck(req.cookies.user_id);
   const templateVars = { user: currentUser };
@@ -136,7 +143,7 @@ app.get("/login", (req, res) => {
   templateVars.user ? res.redirect('/urls') : res.render('urls_login', templateVars);
 });
 
-// /u/[shortURL]=> [longURL] | Short URL redirecting Page to an External URL
+// /u/:shortURL=> http:[longURL] | Short URL redirecting Page to an External URL
 app.get("/u/:shortURL", (req, res) => {
   const queryShortURL = req.params.shortURL
   if (shortURLCheck(queryShortURL)) {
@@ -147,7 +154,7 @@ app.get("/u/:shortURL", (req, res) => {
   }
 });
 
-// /urls/[shortURL] => urls_show | Individual Registered URL / Edit Page
+// /urls/:shortURL => urls_show | Individual Registered URL / Edit Page
 app.get("/urls/:shortURL", (req, res) => {
   const currentUser = cookieCheck(req.cookies.user_id);
   const queryShortURL = req.params.shortURL;
@@ -162,6 +169,7 @@ app.get("/urls/:shortURL", (req, res) => {
   }
 });
 
+
 //// POST REQUESTS ////
 
 // Short URL Generation
@@ -171,7 +179,7 @@ app.post("/urls", (req, res) => {
   if (currentUser) {
     const newLongURL = req.body.longURL;
     let longURL;
-    if (schemeNegCheck.test(newLongURL)) {
+    if (schemeNegCheck.test(newLongURL)) { // Checks if a protocol prefixes the new URL
       longURL = 'http://' + newLongURL;
     } else {
       longURL = newLongURL;
@@ -183,30 +191,53 @@ app.post("/urls", (req, res) => {
     }
     res.redirect(`/urls/${shortURL}`);
   } else {
-    res.sendStatus(403); // Forbidden
+    res.sendStatus(400); // Bad request
   }
 });
 
 // Delete
 // Deleting an URL from database as per user request and redirecting to /urls
 app.post("/urls/:shortURL/delete", (req, res) => {
+  const currentUser = cookieCheck(req.cookies.user_id);
   const shortURL = req.params.shortURL;
-  delete urlDatabase[shortURL];
-  res.redirect('/urls')
+  if (currentUser) { // If user cookie exists, aka logged in
+    if (shortURLCheck(shortURL)) { // If the short URL exists in the url database
+      if (validateShortURL(currentUser.id, shortURL)) { // If shortURL belongs to current user
+        delete urlDatabase[shortURL];
+        res.redirect('/urls');
+      } else { // If shortURL doesn't belong to current user (not possible using browser?)
+        res.sendStatus(403); // Forbidden
+      }
+    } else { // If shortURL not in database
+      res.sendStatus(404) // Not found
+    }
+  } else { // If user cookie doesn't exist, aka not logged in
+    res.redirect('/login')
+  }
 });
 
 // Edit
 // Updating URL database after user edits an existing URL
+
 app.post("/urls/:shortURL/edit", (req, res) => {
+  const currentUser = cookieCheck(req.cookies.user_id);
   const shortURL = req.params.shortURL;
-  let newlongURL;
-  if (schemeNegCheck.test(req.body.edit)) {
-    newlongURL = 'http://' + req.body.edit;
-  } else {
-    newlongURL = req.body.edit;
+  if (currentUser) { // If user cookie exists, aka logged in
+    if (shortURLCheck(shortURL)) { // If the short URL exists in the url database
+        let newlongURL;
+        if (schemeNegCheck.test(req.body.edit)) { // Checks if a protocol prefixes the new URL
+          newlongURL = 'http://' + req.body.edit;
+        } else {
+          newlongURL = req.body.edit;
+        }
+        urlDatabase[shortURL].longURL = newlongURL
+        res.redirect('/urls')
+    } else { // If shortURL not in database
+      res.sendStatus(404) // Not found
+    }
+  } else { // If user cookie doesn't exist, aka not logged in
+    res.redirect('/login')
   }
-  urlDatabase[shortURL].longURL = newlongURL
-  res.redirect('/urls')
 });
 
 // Log In
@@ -214,9 +245,11 @@ app.post("/urls/:shortURL/edit", (req, res) => {
 app.post("/login", (req, res) => {
   const logEmail = req.body.email;
   const logPassword = req.body.password;
-  const logUserID = emailCheck(logEmail)[1];
-  if (!emailCheck(logEmail)[0] || userDatabase[logUserID].password !== logPassword) {
-    res.sendStatus(403); // "Forbidden"
+  const logUserID = emailCheck(logEmail)[1]; // emailCheck() returns the key (user id) in user database
+  if (!emailCheck(logEmail)[0]) {
+    res.sendStatus(404); // Not found
+  } else if (userDatabase[logUserID].password !== logPassword) {
+    res.sendStatus(403); // Forbidden
   } else {
     res.cookie('user_id', logUserID);
     res.redirect('/urls');
@@ -226,10 +259,14 @@ app.post("/login", (req, res) => {
 // Log Out
 // Clearing user cookie per user log out and redirecting to /urls 
 app.post("/logout", (req, res) => {
-  res.clearCookie('user_id');
-  res.redirect('/urls');
+  const currentUser = cookieCheck(req.cookies.user_id);
+  if (currentUser) {
+    res.clearCookie('user_id');
+    res.redirect('/login');
+  } else {
+    res.sendStatus(400); // Bad request
+  }
 });
-
 
 // Registration
 // Creating a new user entry in userDatabase per user registration and redirecting to /urls
@@ -249,6 +286,9 @@ app.post("/register", (req, res) => {
     res.redirect('/urls')
   }
 });
+
+
+
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
