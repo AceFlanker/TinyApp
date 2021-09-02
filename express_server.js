@@ -1,116 +1,57 @@
-const express = require("express");
+//// Dependencies and base variables ///
+
+const express = require('express');
 const app = express();
 const PORT = 8080;
-const bodyParser = require("body-parser");
+const bodyParser = require('body-parser');
 const bcrypt = require('bcryptjs');
 const cookieSession = require('cookie-session');
+const { generateRandomString, emailCheck, shortURLCheck, validateShortURL, cookieCheck, urlsForUser } = require('./helpers.js');
+
+
+//// Databases ////
+
+const userDatabase = {};
+const urlDatabase = {};
+
+
+//// Regular Expressions ////
+
+// RegExp that checks if the URL does not a scheme/protocol specified
+const schemeNegCheck = /^([A-Za-z]+.)+[A-Z-a-z]+(\/?$|\/.+$)/; 
+
+
+//// Express Implementation ////
 
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieSession({
   name: 'session',
   keys: ['key1', 'key2']
 }));
-app.set("view engine", "ejs");
+app.set('view engine', 'ejs');
 
-// Regexp that checks if the URL has a scheme/protocol specified
-const schemeNegCheck = /^([A-Za-z]+.)+[A-Z-a-z]+(\/?$|\/.+$)/; 
 
-//// Databases ////
-const userDatabase = { 
-  //   "admin0": {
-  //     id: "admin0", 
-  //     email: "this_is_an@email.com", 
-  //     password: "leavemealone"
-  //   },
-  //  "Tesla": {
-  //     id: "user2RandomID", 
-  //     email: "user2@example.com", 
-  //     password: "aaa"
-  //   }
-  }
+//// GET Requests ////
 
-const urlDatabase = {
-  // "b2xVn2": {
-  //   longURL: "http://www.lighthouselabs.ca",
-  //   userID: 'nobody'
-  // },
-  // "9sm5xK": {
-  //   longURL: "http://www.google.com",
-  //   userID: 'nobody'
-  // }
-};
+// /register => urls_register | Account Registration
+app.get('/register', (req, res) => {
+  const currentUser = cookieCheck(req.session.user_id, userDatabase);
+  const templateVars = { user: currentUser };
+  templateVars.user ? res.redirect('/urls') : res.render('urls_register', templateVars);
+});
 
-const sessionDatabase = {
-  // '4e6zml': Tesla
-}
+// /login =>  urls_login | Sign In
+app.get('/login', (req, res) => {
+  const currentUser = cookieCheck(req.session.user_id, userDatabase);
+  const templateVars = { user: currentUser };
+  templateVars.user ? res.redirect('/urls') : res.render('urls_login', templateVars);
+});
 
-//// Helper Functins ////
-
-// Random 6-char Alphanumeral Generator
-const generateRandomString = function() {
-  const alphanumberic = 'abcdefghijklmnopqrstuvwxyz0123456789';
-  let randStr = '';
-  for (let i = 0; i < 6; i++) {
-    let randNum = Math.floor(Math.random() * alphanumberic.length);
-    randStr += alphanumberic[randNum];
-  }
-  return randStr;
-}
-
-// Email Check
-// Checks if an email already exists in the user database
-const emailCheck = function(queryEmail, sourceDatabase) {
-  for (const key in sourceDatabase) {
-    if (sourceDatabase[key].email === queryEmail) {
-      return [true, key];
-    }
-  }
-  return false;
-};
-
-// Short URL Check
-// Checks if provided short URL exists in the URL database
-const shortURLCheck = function(queryShortURL) {
-  for (const key in urlDatabase) {
-    if (key === queryShortURL) {
-      return true;
-    }
-  }
-  return false;
-};
-
-// URL Ownership Validation
-// Validates short URL ownership
-const validateShortURL = function(cookieID, queryShortURL) {
-  return urlDatabase[queryShortURL].userID === cookieID ? true : false;
-};
-
-// Log-in check
-// Returns user info object from database if logged in, undefined if otherwise
-const cookieCheck = function(cookieID) {
-  return cookieID ? userDatabase[cookieID] : undefined;
-};
-
-// User URL List
-// Generating a list of user URLs
-const urlsForUser = function(cookieUserID) {
-  let urlsObj = {}
-  for (const key in urlDatabase) {
-    if (urlDatabase[key].userID === cookieUserID) {
-      urlsObj[key] = urlDatabase[key];
-    }
-  }
-  return urlsObj;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-//// GET REQUESTS ////
-
-// /urls => urls_index | "My URLs" (TinyApp Homepage)
+// /urls => urls_index | My URLs - TinyApp Homepage
 app.get('/urls', (req, res) => {
-  const currentUser = cookieCheck(req.session.user_id);
+  const currentUser = cookieCheck(req.session.user_id, userDatabase);
   if (currentUser) {
-    const userURLs = urlsForUser(req.session.user_id);
+    const userURLs = urlsForUser(req.session.user_id, urlDatabase);
     const templateVars = { user: currentUser, urls: userURLs };
     res.render('urls_index', templateVars);
   } else {
@@ -119,48 +60,23 @@ app.get('/urls', (req, res) => {
   }
 });
 
-// /urls/new => urls_new | "Create New URL"
-app.get("/urls/new", (req, res) => {
-  const currentUser = cookieCheck(req.session.user_id);
+// /urls/new => urls_new | Create New URL
+app.get('/urls/new', (req, res) => {
+  const currentUser = cookieCheck(req.session.user_id, userDatabase);
   const templateVars = { user: currentUser };
-  templateVars.user ? res.render("urls_new", templateVars) : res.redirect('/login');
+  templateVars.user ? res.render('urls_new', templateVars) : res.redirect('/login');
 });
 
-// /register => urls_register | Registration Page
-app.get('/register', (req, res) => {
-  const currentUser = cookieCheck(req.session.user_id);
-  const templateVars = { user: currentUser };
-  templateVars.user ? res.redirect('/urls') : res.render('urls_register', templateVars);
-});
-
-// /login =>  urls_login | Login page 
-app.get("/login", (req, res) => {
-  const currentUser = cookieCheck(req.session.user_id);
-  const templateVars = { user: currentUser };
-  templateVars.user ? res.redirect('/urls') : res.render('urls_login', templateVars);
-});
-
-// /u/:shortURL => http:[longURL] | Short URL redirecting to an External URL
-app.get("/u/:shortURL", (req, res) => {
-  const queryShortURL = req.params.shortURL
-  if (shortURLCheck(queryShortURL)) {
-    const longURL = urlDatabase[queryShortURL].longURL;
-    res.redirect(longURL);
-  } else {
-    res.sendStatus(404); // Not found
-  }
-});
-
-// /urls/:shortURL => urls_show | Individual Registered URL / Edit Page
-app.get("/urls/:shortURL", (req, res) => {
-  const currentUser = cookieCheck(req.session.user_id);
+// /urls/:shortURL => urls_show | Individual Registered Short URL / Edit
+app.get('/urls/:shortURL', (req, res) => {
+  const currentUser = cookieCheck(req.session.user_id, userDatabase);
   const queryShortURL = req.params.shortURL;
-  if (shortURLCheck(queryShortURL)) {
+  if (shortURLCheck(queryShortURL, urlDatabase)) {
     if (!currentUser) {
       res.sendStatus(400);
     } else if (urlDatabase[queryShortURL].userID === currentUser.id) {
       const templateVars = { user: currentUser, shortURL: queryShortURL, longURL: urlDatabase[queryShortURL].longURL };
-      res.render("urls_show", templateVars);
+      res.render('urls_show', templateVars);
     } else {
       res.sendStatus(403); // Forbidden
     } 
@@ -169,13 +85,76 @@ app.get("/urls/:shortURL", (req, res) => {
   }
 });
 
+// /u/:shortURL => http:[longURL] | Short URL redirecting to an External URL
+app.get('/u/:shortURL', (req, res) => {
+  const queryShortURL = req.params.shortURL
+  if (shortURLCheck(queryShortURL, urlDatabase)) {
+    const longURL = urlDatabase[queryShortURL].longURL;
+    res.redirect(longURL);
+  } else {
+    res.sendStatus(404); // Not found
+  }
+});
 
-//// POST REQUESTS ////
+
+//// POST Requests ////
+
+// Registration
+// Creating a new user entry in userDatabase per user registration and redirecting to /urls
+app.post('/register', (req, res) => {
+  if (req.body.email === '' || req.body.password === '' || emailCheck(req.body.email, userDatabase)) {
+    res.sendStatus(400); // Bad Request
+  } else {
+    const regEmail = req.body.email;
+    const regPassword = req.body.password;
+    const generatedID = generateRandomString();
+    userDatabase[generatedID] = {
+      id: generatedID,
+      email: regEmail,
+      password: bcrypt.hashSync(regPassword, 10),
+    };
+    req.session.user_id = generatedID;
+    res.redirect('/urls')
+  }
+});
+
+// Log In
+// Setting a cookie per randomly generated user id and redirecting to /urls 
+app.post('/login', (req, res) => {
+  const logEmail = req.body.email;
+  const logPassword = req.body.password;
+  let logUserID; // emailCheck() returns the key (user id) in user database
+  if (!emailCheck(logEmail, userDatabase)) {
+    res.sendStatus(404); // Not found
+  } else {
+    logUserID = emailCheck(logEmail, userDatabase);
+    const dbPassword = userDatabase[logUserID].password;
+    if (!bcrypt.compareSync(logPassword, dbPassword)) {
+      res.sendStatus(403); // Forbidden
+    } else {
+    req.session.user_id = logUserID
+    res.redirect('/urls');
+    }
+  }
+});
+
+// Log Out
+// Clearing user cookie per user log out and redirecting to /urls 
+app.post('/logout', (req, res) => {
+  const currentUser = cookieCheck(req.session.user_id, userDatabase);
+  if (currentUser) {
+    const sessionID = req.session.user_id;
+    req.session = null;
+    res.redirect('/login');
+  } else {
+    res.sendStatus(400); // Bad request
+  }
+});
 
 // Short URL Generation
 // Generating new data after user enters a new URL and redirecting to /urls/shortURL
-app.post("/urls", (req, res) => {
-  const currentUser = cookieCheck(req.session.user_id);
+app.post('/urls', (req, res) => {
+  const currentUser = cookieCheck(req.session.user_id, userDatabase);
   if (currentUser) {
     const newLongURL = req.body.longURL;
     let longURL;
@@ -197,12 +176,12 @@ app.post("/urls", (req, res) => {
 
 // Delete
 // Deleting an URL from database as per user request and redirecting to /urls
-app.post("/urls/:shortURL/delete", (req, res) => {
-  const currentUser = cookieCheck(req.session.user_id);
+app.post('/urls/:shortURL/delete', (req, res) => {
+  const currentUser = cookieCheck(req.session.user_id, userDatabase);
   const shortURL = req.params.shortURL;
   if (currentUser) { // If user cookie exists, aka logged in
-    if (shortURLCheck(shortURL)) { // If the short URL exists in the url database
-      if (validateShortURL(currentUser.id, shortURL)) { // If shortURL belongs to current user
+    if (shortURLCheck(shortURL, urlDatabase)) { // If the short URL exists in the url database
+      if (validateShortURL(currentUser.id, shortURL, urlDatabase)) { // If shortURL belongs to current user
         delete urlDatabase[shortURL];
         res.redirect('/urls');
       } else { // If shortURL doesn't belong to current user (not possible using browser?)
@@ -218,11 +197,11 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 
 // Edit
 // Updating URL database after user edits an existing URL
-app.post("/urls/:shortURL/edit", (req, res) => {
-  const currentUser = cookieCheck(req.session.user_id);
+app.post('/urls/:shortURL/edit', (req, res) => {
+  const currentUser = cookieCheck(req.session.user_id, userDatabase);
   const shortURL = req.params.shortURL;
   if (currentUser) { // If user cookie exists, aka logged in
-    if (shortURLCheck(shortURL)) { // If the short URL exists in the url database
+    if (shortURLCheck(shortURL, urlDatabase)) { // If the short URL exists in the url database
         let newlongURL;
         if (schemeNegCheck.test(req.body.edit)) { // Checks if a protocol prefixes the new URL
           newlongURL = 'http://' + req.body.edit;
@@ -239,60 +218,8 @@ app.post("/urls/:shortURL/edit", (req, res) => {
   }
 });
 
-// Log In
-// Setting a cookie per randomly generated user id and redirecting to /urls 
-app.post("/login", (req, res) => {
-  const logEmail = req.body.email;
-  const logPassword = req.body.password;
-  let logUserID = emailCheck(logEmail, userDatabase)[1]; // emailCheck() returns the key (user id) in user database
-  if (!emailCheck(logEmail, userDatabase)[0]) {
-    res.sendStatus(404); // Not found
-  } else {
-    logUserID = emailCheck(logEmail, userDatabase)[1];
-    const dbPassword = userDatabase[logUserID].password;
-    if (!bcrypt.compareSync(logPassword, dbPassword)) {
-      res.sendStatus(403); // Forbidden
-    } else {
-    req.session.user_id = logUserID
-    res.redirect('/urls');
-    }
-  }
-});
- 
-// Log Out
-// Clearing user cookie per user log out and redirecting to /urls 
-app.post("/logout", (req, res) => {
-  const currentUser = cookieCheck(req.session.user_id);
-  if (currentUser) {
-    const sessionID = req.session.user_id;
-    delete sessionDatabase[sessionID];
-    req.session = null;
-    res.redirect('/login');
-  } else {
-    res.sendStatus(400); // Bad request
-  }
-});
 
-// Registration
-// Creating a new user entry in userDatabase per user registration and redirecting to /urls
-app.post("/register", (req, res) => {
-  if (req.body.email === '' || req.body.password === '' || emailCheck(req.body.email, userDatabase)[0]) {
-    res.sendStatus(400); // "Bad Request"
-  } else {
-    const regEmail = req.body.email;
-    const regPassword = req.body.password;
-    const generatedID = generateRandomString();
-    userDatabase[generatedID] = {
-      id: generatedID,
-      email: regEmail,
-      password: bcrypt.hashSync(regPassword, 10),
-    };
-    req.session.user_id = generatedID;
-    console.log(req.session.user_id);
-    console.log(generatedID);
-    res.redirect('/urls')
-  }
-});
+//// Black Magic ////
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
