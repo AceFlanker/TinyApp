@@ -57,21 +57,15 @@ const generateRandomString = function() {
   return randStr;
 }
 
-// Object Value Check
-// Generic Boolean checking function for objects
-const objCheck = function(queryObj, queryKey, queryValue) {
-  for (const key in queryObj) {
-    if (queryObj[key][queryKey] === queryValue) {
+// Email Check
+// Checks if an email already exists in the user database
+const emailCheck = function(queryEmail, sourceDatabase) {
+  for (const key in sourceDatabase) {
+    if (sourceDatabase[key].email === queryEmail) {
       return [true, key];
     }
   }
   return false;
-}
-
-// Email Check <- Object Value Check
-// Checks if an email already exists in the user database
-const emailCheck = function(queryEmail) {
-  return objCheck(userDatabase, 'email', queryEmail);
 };
 
 // Short URL Check
@@ -83,20 +77,22 @@ const shortURLCheck = function(queryShortURL) {
     }
   }
   return false;
-}
+};
 
+// URL Ownership Validation
 // Validates short URL ownership
 const validateShortURL = function(cookieID, queryShortURL) {
   return urlDatabase[queryShortURL].userID === cookieID ? true : false;
-}
+};
 
-
-// Returns user info object in the user database if user is logged in, undefined if otherwise
+// Log-in check
+// Returns user info object from database if logged in, undefined if otherwise
 const cookieCheck = function(cookieID) {
   return cookieID ? userDatabase[cookieID] : undefined;
-} // NOTE: The above returns the ENTIRE USER OBJECT
+};
 
-// Generating a list of user's URLs
+// User URL List
+// Generating a list of user URLs
 const urlsForUser = function(cookieUserID) {
   let urlsObj = {}
   for (const key in urlDatabase) {
@@ -107,23 +103,15 @@ const urlsForUser = function(cookieUserID) {
   return urlsObj;
 }
 
-// Assigning user's URL list to the a variable of html/ejs' template object
-const urlsTemplate = function(cookie, currentURLs, templateObj) {
-  if (cookie) {
-    templateObj.urls = currentURLs;
-  }
-}
-
 //////////////////////////////////////////////////////////////////////////////
 //// GET REQUESTS ////
 
-// /urls => urls_index | My URLs (TinyApp Homepage)
+// /urls => urls_index | "My URLs" (TinyApp Homepage)
 app.get('/urls', (req, res) => {
   const currentUser = cookieCheck(req.session.user_id);
   if (currentUser) {
     const userURLs = urlsForUser(req.session.user_id);
-    const templateVars = { user: currentUser, urls: {} };
-    urlsTemplate(currentUser, userURLs, templateVars);
+    const templateVars = { user: currentUser, urls: userURLs };
     res.render('urls_index', templateVars);
   } else {
     // res.sendStatus(400); // Bad request
@@ -131,7 +119,7 @@ app.get('/urls', (req, res) => {
   }
 });
 
-// /urls/new => urls_new | Create New URL
+// /urls/new => urls_new | "Create New URL"
 app.get("/urls/new", (req, res) => {
   const currentUser = cookieCheck(req.session.user_id);
   const templateVars = { user: currentUser };
@@ -152,7 +140,7 @@ app.get("/login", (req, res) => {
   templateVars.user ? res.redirect('/urls') : res.render('urls_login', templateVars);
 });
 
-// /u/:shortURL=> http:[longURL] | Short URL redirecting Page to an External URL
+// /u/:shortURL => http:[longURL] | Short URL redirecting to an External URL
 app.get("/u/:shortURL", (req, res) => {
   const queryShortURL = req.params.shortURL
   if (shortURLCheck(queryShortURL)) {
@@ -167,13 +155,17 @@ app.get("/u/:shortURL", (req, res) => {
 app.get("/urls/:shortURL", (req, res) => {
   const currentUser = cookieCheck(req.session.user_id);
   const queryShortURL = req.params.shortURL;
-  if (!currentUser) {
-    res.sendStatus(400);
-  } else if (urlDatabase[queryShortURL].userID === currentUser.id) {
-    const templateVars = { user: currentUser, shortURL: queryShortURL, longURL: urlDatabase[queryShortURL].longURL };
-    res.render("urls_show", templateVars);
+  if (shortURLCheck(queryShortURL)) {
+    if (!currentUser) {
+      res.sendStatus(400);
+    } else if (urlDatabase[queryShortURL].userID === currentUser.id) {
+      const templateVars = { user: currentUser, shortURL: queryShortURL, longURL: urlDatabase[queryShortURL].longURL };
+      res.render("urls_show", templateVars);
+    } else {
+      res.sendStatus(403); // Forbidden
+    } 
   } else {
-    res.sendStatus(403); // Forbidden
+    res.sendStatus(404); // Not found
   }
 });
 
@@ -252,11 +244,11 @@ app.post("/urls/:shortURL/edit", (req, res) => {
 app.post("/login", (req, res) => {
   const logEmail = req.body.email;
   const logPassword = req.body.password;
-  let logUserID = emailCheck(logEmail)[1]; // emailCheck() returns the key (user id) in user database
-  if (!emailCheck(logEmail)[0]) {
+  let logUserID = emailCheck(logEmail, userDatabase)[1]; // emailCheck() returns the key (user id) in user database
+  if (!emailCheck(logEmail, userDatabase)[0]) {
     res.sendStatus(404); // Not found
   } else {
-    logUserID = emailCheck(logEmail)[1];
+    logUserID = emailCheck(logEmail, userDatabase)[1];
     const dbPassword = userDatabase[logUserID].password;
     if (!bcrypt.compareSync(logPassword, dbPassword)) {
       res.sendStatus(403); // Forbidden
@@ -284,7 +276,7 @@ app.post("/logout", (req, res) => {
 // Registration
 // Creating a new user entry in userDatabase per user registration and redirecting to /urls
 app.post("/register", (req, res) => {
-  if (req.body.email === '' || req.body.password === '' || emailCheck(req.body.email)[0]) {
+  if (req.body.email === '' || req.body.password === '' || emailCheck(req.body.email, userDatabase)[0]) {
     res.sendStatus(400); // "Bad Request"
   } else {
     const regEmail = req.body.email;
