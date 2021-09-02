@@ -14,15 +14,15 @@ const generateRandomString = function() {
 // NOTE this is the getUserByEmail() funcion that the instructions requested with name changed
 const emailCheck = function(queryEmail, sourceDatabase) {
   for (const userID in sourceDatabase) {
-    return sourceDatabase[userID].email === queryEmail ? key : undefined;
+    return sourceDatabase[userID].email === queryEmail ? userID : undefined;
   }
 };
 
 // Short URL Check
 // Checks if provided short URL exists in the URL database
 const shortURLCheck = function(queryShortURL, sourceDatabase) {
-  for (const key in sourceDatabase) {
-    return key === queryShortURL ? true : false;
+  for (const shortURL in sourceDatabase) {
+    return shortURL === queryShortURL ? true : false;
   }
 };
 
@@ -42,9 +42,9 @@ const cookieCheck = function(cookieID, sourceDatabase) {
 // Generating a list of user URLs
 const urlsForUser = function(cookieUserID, sourceDatabase) {
   let urlsObj = {}
-  for (const key in sourceDatabase) {
-    if (sourceDatabase[key].userID === cookieUserID) {
-      urlsObj[key] = sourceDatabase[key];
+  for (const shortURL in sourceDatabase) {
+    if (sourceDatabase[shortURL].userID === cookieUserID) {
+      urlsObj[shortURL] = sourceDatabase[shortURL];
     }
   }
   return urlsObj;
