@@ -2,14 +2,15 @@ const express = require("express");
 const app = express();
 const PORT = 8080;
 const bodyParser = require("body-parser");
-const cookieParser = require('cookie-parser');
-const { query } = require("express");
-app.use(bodyParser.urlencoded({extended: true}));
-app.use(cookieParser());
-app.set("view engine", "ejs");
-
 const bcrypt = require('bcryptjs');
+const cookieSession = require('cookie-session');
 
+app.use(bodyParser.urlencoded({extended: true}));
+app.use(cookieSession({
+  name: 'session',
+  keys: ['key1', 'key2']
+}));
+app.set("view engine", "ejs");
 
 // Regexp that checks if the URL has a scheme/protocol specified
 const schemeNegCheck = /^([A-Za-z]+.)+[A-Z-a-z]+(\/?$|\/.+$)/; 
@@ -38,6 +39,10 @@ const urlDatabase = {
   //   userID: 'nobody'
   // }
 };
+
+const sessionDatabase = {
+  // '4e6zml': Tesla
+}
 
 //// Helper Functins ////
 
@@ -85,6 +90,7 @@ const validateShortURL = function(cookieID, queryShortURL) {
   return urlDatabase[queryShortURL].userID === cookieID ? true : false;
 }
 
+
 // Returns user info object in the user database if user is logged in, undefined if otherwise
 const cookieCheck = function(cookieID) {
   return cookieID ? userDatabase[cookieID] : undefined;
@@ -113,9 +119,9 @@ const urlsTemplate = function(cookie, currentURLs, templateObj) {
 
 // /urls => urls_index | My URLs (TinyApp Homepage)
 app.get('/urls', (req, res) => {
-  const currentUser = cookieCheck(req.cookies.user_id);
+  const currentUser = cookieCheck(req.session.user_id);
   if (currentUser) {
-    const userURLs = urlsForUser(req.cookies.user_id);
+    const userURLs = urlsForUser(req.session.user_id);
     const templateVars = { user: currentUser, urls: {} };
     urlsTemplate(currentUser, userURLs, templateVars);
     res.render('urls_index', templateVars);
@@ -127,21 +133,21 @@ app.get('/urls', (req, res) => {
 
 // /urls/new => urls_new | Create New URL
 app.get("/urls/new", (req, res) => {
-  const currentUser = cookieCheck(req.cookies.user_id);
+  const currentUser = cookieCheck(req.session.user_id);
   const templateVars = { user: currentUser };
   templateVars.user ? res.render("urls_new", templateVars) : res.redirect('/login');
 });
 
 // /register => urls_register | Registration Page
 app.get('/register', (req, res) => {
-  const currentUser = cookieCheck(req.cookies.user_id);
+  const currentUser = cookieCheck(req.session.user_id);
   const templateVars = { user: currentUser };
   templateVars.user ? res.redirect('/urls') : res.render('urls_register', templateVars);
 });
 
 // /login =>  urls_login | Login page 
 app.get("/login", (req, res) => {
-  const currentUser = cookieCheck(req.cookies.user_id);
+  const currentUser = cookieCheck(req.session.user_id);
   const templateVars = { user: currentUser };
   templateVars.user ? res.redirect('/urls') : res.render('urls_login', templateVars);
 });
@@ -159,11 +165,10 @@ app.get("/u/:shortURL", (req, res) => {
 
 // /urls/:shortURL => urls_show | Individual Registered URL / Edit Page
 app.get("/urls/:shortURL", (req, res) => {
-  const currentUser = cookieCheck(req.cookies.user_id);
+  const currentUser = cookieCheck(req.session.user_id);
   const queryShortURL = req.params.shortURL;
   if (!currentUser) {
     res.sendStatus(400);
-    // res.redirect('/login');
   } else if (urlDatabase[queryShortURL].userID === currentUser.id) {
     const templateVars = { user: currentUser, shortURL: queryShortURL, longURL: urlDatabase[queryShortURL].longURL };
     res.render("urls_show", templateVars);
@@ -178,7 +183,7 @@ app.get("/urls/:shortURL", (req, res) => {
 // Short URL Generation
 // Generating new data after user enters a new URL and redirecting to /urls/shortURL
 app.post("/urls", (req, res) => {
-  const currentUser = cookieCheck(req.cookies.user_id);
+  const currentUser = cookieCheck(req.session.user_id);
   if (currentUser) {
     const newLongURL = req.body.longURL;
     let longURL;
@@ -201,7 +206,7 @@ app.post("/urls", (req, res) => {
 // Delete
 // Deleting an URL from database as per user request and redirecting to /urls
 app.post("/urls/:shortURL/delete", (req, res) => {
-  const currentUser = cookieCheck(req.cookies.user_id);
+  const currentUser = cookieCheck(req.session.user_id);
   const shortURL = req.params.shortURL;
   if (currentUser) { // If user cookie exists, aka logged in
     if (shortURLCheck(shortURL)) { // If the short URL exists in the url database
@@ -221,9 +226,8 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 
 // Edit
 // Updating URL database after user edits an existing URL
-
 app.post("/urls/:shortURL/edit", (req, res) => {
-  const currentUser = cookieCheck(req.cookies.user_id);
+  const currentUser = cookieCheck(req.session.user_id);
   const shortURL = req.params.shortURL;
   if (currentUser) { // If user cookie exists, aka logged in
     if (shortURLCheck(shortURL)) { // If the short URL exists in the url database
@@ -248,25 +252,29 @@ app.post("/urls/:shortURL/edit", (req, res) => {
 app.post("/login", (req, res) => {
   const logEmail = req.body.email;
   const logPassword = req.body.password;
-  const logUserID = emailCheck(logEmail)[1]; // emailCheck() returns the key (user id) in user database
-  const dbPassword = userDatabase[logUserID].password;
+  let logUserID = emailCheck(logEmail)[1]; // emailCheck() returns the key (user id) in user database
   if (!emailCheck(logEmail)[0]) {
     res.sendStatus(404); // Not found
-  } else if (!bcrypt.compareSync(logPassword, dbPassword)) {
-    res.sendStatus(403); // Forbidden
   } else {
-    console.log(dbPassword);
-    res.cookie('user_id', logUserID);
+    logUserID = emailCheck(logEmail)[1];
+    const dbPassword = userDatabase[logUserID].password;
+    if (!bcrypt.compareSync(logPassword, dbPassword)) {
+      res.sendStatus(403); // Forbidden
+    } else {
+    req.session.user_id = logUserID
     res.redirect('/urls');
+    }
   }
 });
-
+ 
 // Log Out
 // Clearing user cookie per user log out and redirecting to /urls 
 app.post("/logout", (req, res) => {
-  const currentUser = cookieCheck(req.cookies.user_id);
+  const currentUser = cookieCheck(req.session.user_id);
   if (currentUser) {
-    res.clearCookie('user_id');
+    const sessionID = req.session.user_id;
+    delete sessionDatabase[sessionID];
+    req.session = null;
     res.redirect('/login');
   } else {
     res.sendStatus(400); // Bad request
@@ -285,15 +293,14 @@ app.post("/register", (req, res) => {
     userDatabase[generatedID] = {
       id: generatedID,
       email: regEmail,
-      password: bcrypt.hashSync(regPassword, 10)
+      password: bcrypt.hashSync(regPassword, 10),
     };
-    res.cookie('user_id', generatedID);
+    req.session.user_id = generatedID;
+    console.log(req.session.user_id);
+    console.log(generatedID);
     res.redirect('/urls')
   }
 });
-
-
-
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
