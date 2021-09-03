@@ -1,6 +1,7 @@
 //// Dependencies and base global variables ///
 
 const express = require('express');
+const methodOverride = require('method-override')
 const app = express();
 const PORT = 8080;
 const bodyParser = require('body-parser');
@@ -16,14 +17,13 @@ const urlDatabase = {};
 
 
 //// Middleware Implementation ////
-
+app.use(methodOverride('_method'))
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieSession({
   name: 'session',
   keys: ['Thank', 'You']
 }));
 app.set('view engine', 'ejs');
-
 
 //// GET Requests ////
 
@@ -32,7 +32,7 @@ app.set('view engine', 'ejs');
 app.get('/', (req, res) => {
   // "loginCheck" returns the appropriate user object if there is a cookie, undefined otherwise
   const currentUser = loginCheck(req.session.user_id, userDatabase);
-  // If there is NO user_id cookie
+  // If there is NO user_id cookie, aka the client is not logged in
   !currentUser ? res.redirect('/login') : res.redirect('/urls');
 });
 
@@ -188,7 +188,7 @@ app.post('/register', (req, res) => {
 });
 
 // Log Out
-// Clearing user cookie per user log out and redirecting to /urls 
+// Clearing user cookie per user logout and redirecting to /urls 
 app.post('/logout', (req, res) => {
     req.session = null;
     res.redirect('/login');
@@ -196,9 +196,10 @@ app.post('/logout', (req, res) => {
 
 // Edit
 // Updating URL database after user edits an existing URL
-app.post('/urls/:shortURL', (req, res) => {
+app.put('/urls/:shortURL', (req, res) => {
   const currentUser = loginCheck(req.session.user_id, userDatabase);
   const shortURL = req.params.shortURL;
+  console.log(shortURL);
   if (!currentUser) {
     return res.redirect('/error/401');
   } 
@@ -214,7 +215,7 @@ app.post('/urls/:shortURL', (req, res) => {
 
 // Delete
 // Deleting an URL from database as per user request and redirecting to /urls
-app.post('/urls/:shortURL/delete', (req, res) => {
+app.delete('/urls/:shortURL/delete', (req, res) => {
   const currentUser = loginCheck(req.session.user_id, userDatabase);
   const shortURL = req.params.shortURL;
   if (!currentUser) {

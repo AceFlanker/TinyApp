@@ -22,7 +22,7 @@
         </div>
         <div class="card-footer text-muted">
           <h3>Edit</h3>
-          <form method="POST" action="/urls/<%= shortURL  %>" name="edit" id="edit">
+          <form method="POST" action="/urls/<%= shortURL  %>?_method=PUT" name="edit" id="edit">
             <label form="edit">New URL:</label>
             <input type="text" name="edit">
             <button form="edit" type="submit" class="btn btn-primary">Submit</button>
