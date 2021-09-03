@@ -21,7 +21,6 @@
         <br>
         <input form="register" class="col-sm-3 my-1" type="email" name="email" class="form-control" id="email_register" placeholder="Enter email" value="<%= queryEmail %>">
         <p style="font-size:12px;color:red;margin:0px 17px;padding:0px">
-
           <% if (empty === 1) { %>
           <span>
             Can't be empty
@@ -31,7 +30,7 @@
           <span>Email already exists</span>
           <% } %>
           <% if (empty !== 1 || empty !==3) { %>
-            <span style="visibility: hidden">You found me! I'm a very important place holder, like literally. And althought I have a lot of stories to tell, but not today! My job right now is to hold this spot, so things look nice!</span>
+            <span style="visibility: hidden">You found me! I'm a very important place holder, like literally. And although I have a lot of stories to tell, but not today! My job right now is to hold this spot, so things look nice!</span>
           <% } %>
         </p>
       </div>

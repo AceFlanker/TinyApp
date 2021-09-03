@@ -1,4 +1,5 @@
 // Random 6-char Alphanumeral Generator
+// Returns a 6-character string mixed of alphabets and numbers
 const generateRandomString = function() {
   const alphanumberic = 'abcdefghijklmnopqrstuvwxyz0123456789';
   let randStr = '';
@@ -10,8 +11,8 @@ const generateRandomString = function() {
 }
 
 // Email Check
-// Checks if an email already exists in the user database
-// NOTE this is the getUserByEmail() funcion that the instructions requested with name changed
+// Checks if email already exists in user database
+// NOTE this is the getUserByEmail() funcion that the client requested but with a different name
 const emailCheck = function(queryEmail, sourceDatabase) {
   for (const userID in sourceDatabase) {
     if (sourceDatabase[userID].email === queryEmail) {
@@ -22,7 +23,7 @@ const emailCheck = function(queryEmail, sourceDatabase) {
 };
 
 // Short URL Check
-// Checks if provided short URL exists in the URL database
+// Checks if provided short URL exists in URL database
 const shortURLCheck = function(queryShortURL, sourceDatabase) {
   for (const shortURL in sourceDatabase) {
     if (shortURL === queryShortURL) {
@@ -34,22 +35,22 @@ const shortURLCheck = function(queryShortURL, sourceDatabase) {
 
 // URL Ownership Validation
 // Validates short URL ownership
-const urlOwnership = function(cookieID, queryShortURL, sourceDatabase) {
-  return sourceDatabase[queryShortURL].userID === cookieID ? true : false;
+const urlOwnership = function(loginID, queryShortURL, sourceDatabase) {
+  return sourceDatabase[queryShortURL].userID === loginID ? true : false;
 };
 
-// Log-in check
-// Returns user info object from database if logged in, undefined if otherwise
-const cookieCheck = function(cookieID, sourceDatabase) {
-  return cookieID ? sourceDatabase[cookieID] : undefined;
+// Login Status Check
+// Returns required user info object from database if client is logged in, undefined if otherwise. Returned data will be passed as a variable to the rendered HTML document
+const loginCheck = function(loginID, sourceDatabase) {
+  return loginID ? sourceDatabase[loginID] : undefined;
 };
 
 // User URL List
-// Generating a list of user URLs
-const urlsForUser = function(cookieUserID, sourceDatabase) {
-  let urlsObj = {}
+// Generating a list of URLs from URL database based on associated user id
+const urlsPopulator = function(loginUserID, sourceDatabase) {
+  let urlsObj = {};
   for (const shortURL in sourceDatabase) {
-    if (sourceDatabase[shortURL].userID === cookieUserID) {
+    if (sourceDatabase[shortURL].userID === loginUserID) {
       urlsObj[shortURL] = sourceDatabase[shortURL];
     }
   }
@@ -57,26 +58,20 @@ const urlsForUser = function(cookieUserID, sourceDatabase) {
 }
 
 // URL Parser
-// Checks if the provided URL contains an "http://" suffix, and adds one if not
+// Checks if provided URL contains an "http://" suffix and adds one if not
 const urlParser = function(newLongURL) {
-  // RegExp that checks if the URL does NOT have a scheme/protocol specified
+  // Negative check - RegExp that checks if the URL does NOT have a scheme/protocol specified
   const schemeNegCheck = /^([A-Za-z]+.)+[A-Z-a-z]+(\/?$|\/.+$)/;
-  let longURL;
-  if (schemeNegCheck.test(newLongURL)) { // Checks if a protocol prefixes the new URL
-    return 'http://' + newLongURL;
-  } else {
-    return newLongURL;
-  }
+  // Checks if a protocol prefixes the new URL, if not, "http://" is added
+  return schemeNegCheck.test(newLongURL) ? 'http://' + newLongURL : newLongURL;
 }
-
-
 
 module.exports = {
   generateRandomString,
   emailCheck,
   shortURLCheck,
   urlOwnership,
-  cookieCheck,
-  urlsForUser,
+  loginCheck,
+  urlsPopulator,
   urlParser
 }
