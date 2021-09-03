@@ -30,8 +30,6 @@
             <td><%= url %></td>
             <td><%= urls[url].longURL %></td>
             <td>
-              <!-- <% const editURL = '/urls/' + url; %>
-              <% const editID = 'edit_' + url; %> -->
               <form method="GET" action="/urls/<%= url  %>" name="edit" id="edit_<%= url %>">
                 <button form="edit_<%= url %>" type="submit" name="edit"  value="edit" class="btn btn-outline-primary">Edit</button>
               </form>

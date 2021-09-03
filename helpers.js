@@ -14,21 +14,27 @@ const generateRandomString = function() {
 // NOTE this is the getUserByEmail() funcion that the instructions requested with name changed
 const emailCheck = function(queryEmail, sourceDatabase) {
   for (const userID in sourceDatabase) {
-    return sourceDatabase[userID].email === queryEmail ? userID : undefined;
+    if (sourceDatabase[userID].email === queryEmail) {
+      return userID;
+    }
   }
+  return undefined;
 };
 
 // Short URL Check
 // Checks if provided short URL exists in the URL database
 const shortURLCheck = function(queryShortURL, sourceDatabase) {
   for (const shortURL in sourceDatabase) {
-    return shortURL === queryShortURL ? true : false;
+    if (shortURL === queryShortURL) {
+      return true;
+    }
   }
+  return false;
 };
 
 // URL Ownership Validation
 // Validates short URL ownership
-const validateShortURL = function(cookieID, queryShortURL, sourceDatabase) {
+const urlOwnership = function(cookieID, queryShortURL, sourceDatabase) {
   return sourceDatabase[queryShortURL].userID === cookieID ? true : false;
 };
 
@@ -50,11 +56,27 @@ const urlsForUser = function(cookieUserID, sourceDatabase) {
   return urlsObj;
 }
 
+// URL Parser
+// Checks if the provided URL contains an "http://" suffix, and adds one if not
+const urlParser = function(newLongURL) {
+  // RegExp that checks if the URL does NOT have a scheme/protocol specified
+  const schemeNegCheck = /^([A-Za-z]+.)+[A-Z-a-z]+(\/?$|\/.+$)/;
+  let longURL;
+  if (schemeNegCheck.test(newLongURL)) { // Checks if a protocol prefixes the new URL
+    return 'http://' + newLongURL;
+  } else {
+    return newLongURL;
+  }
+}
+
+
+
 module.exports = {
   generateRandomString,
   emailCheck,
   shortURLCheck,
-  validateShortURL,
+  urlOwnership,
   cookieCheck,
-  urlsForUser
+  urlsForUser,
+  urlParser
 }
