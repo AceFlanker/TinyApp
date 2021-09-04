@@ -94,33 +94,43 @@ app.get('/urls/:shortURL', (req, res) => {
     return res.redirect('/error/403');
   }
   const querylongURL = urlDatabase[queryShortURL].longURL;
-  const templateVars = { user: currentUser, shortURL: queryShortURL, longURL:querylongURL };
+  const timesVisited = Object.keys(urlDatabase[queryShortURL].timeStamps).length || 0;
+  const uniqueUsers = Object.keys(urlDatabase[queryShortURL].uniqueUsers).length || 0;
+  const visitDates = urlDatabase[queryShortURL].timeStamps;
+  const templateVars = {
+    user: currentUser,
+    shortURL: queryShortURL,
+    longURL:querylongURL,
+    timesVisited,
+    uniqueUsers,
+    visitDates,
+  };
   res.render('urls_show', templateVars);
 });
 
 // /u/:shortURL => http:[longURL]
 // Short URL redirecting to its linked external URL
 app.get('/u/:shortURL', (req, res) => {
-  let currentUser = loginCheck(req.session.user_id, userDatabase);
+  const currentUser = loginCheck(req.session.user_id, userDatabase);
   const queryShortURL = req.params.shortURL;
+  const longURL = urlDatabase[queryShortURL].longURL;
   if (!shortURLCheck(queryShortURL, urlDatabase)) {
     return res.redirect('/error/404');
   }
-  // If given a cookie but not registered, assigns an "id" property for stat tracking
-  if (req.session.user_id && !currentUser) {
-    currentUser = { id: req.session.user_id }; 
-  }
-  // If no cookie at all
-  if (!req.session.user_id) {
-    req.session.user_id = generateRandomString();
-    currentUser = { id: req.session.user_id };
-  }
-  const longURL = urlDatabase[queryShortURL].longURL;
+  // If the user isn't logged in or doesn't own the short URL, a visitor cookie is set
+  if (!currentUser || !urlOwnership(currentUser.id, queryShortURL, urlDatabase)) {
+    if (!req.session.visitor_id) {
+      req.session.visitor_id = generateRandomString();
+    }
+    // Timestamping and populating a unique visitor list
+    const visitorID = req.session.visitor_id;
+    urlDatabase[queryShortURL].timeStamps[Date()] = visitorID;
+    urlDatabase[queryShortURL].uniqueUsers[visitorID] = visitorID;
+  } else {
+    urlDatabase[queryShortURL].timeStamps[Date()] = 'You';
+    urlDatabase[queryShortURL].uniqueUsers['You'] = 'You';
+  } 
   res.redirect(longURL);
-  // Timestamping and populating a unique visitor list
-  urlDatabase[queryShortURL].timeStamps[Date.now()] = currentUser.id;
-  urlDatabase[queryShortURL].uniqueUsers[currentUser.id] = currentUser.id;
-  console.log(urlDatabase[queryShortURL]);
 });
 
 // /error/:code => /urls_error 
@@ -210,12 +220,12 @@ app.post('/register', (req, res) => {
 // Clearing user cookie per user logout and redirecting to /urls 
 app.post('/logout', (req, res) => {
   const currentUser = loginCheck(req.session.user_id, userDatabase);
-  // If the user is regerested
+  // If the user is regerested, clears the cookie
   if (currentUser) {
     req.session = null;
   }
   res.redirect('/login');
-  // Else keeping the cookie in the non-registered user client for stat tracking
+  // Else keeps the visitor cookie in non-registered users for stat tracking (ethical?), if they are somehow able to send a POST logout request via other means
 });
 
 // Edit
