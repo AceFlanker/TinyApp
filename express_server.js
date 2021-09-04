@@ -239,7 +239,6 @@ app.post('/logout', (req, res) => {
 app.put('/urls/:shortURL', (req, res) => {
   const currentUser = loginCheck(req.session.user_id, userDatabase);
   const shortURL = req.params.shortURL;
-  console.log(shortURL);
   if (!currentUser) {
     return res.redirect('/error/401');
   }
@@ -272,5 +271,4 @@ app.delete('/urls/:shortURL/delete', (req, res) => {
 //// Black Magic ////
 
 app.listen(PORT, () => {
-  console.log(`Example app listening on port ${PORT}!`);
 });
