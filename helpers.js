@@ -12,7 +12,7 @@ const generateRandomString = function() {
 
 // Email Check
 // Checks if email already exists in user database
-// NOTE this is the getUserByEmail() funcion that the client requested but with a different name
+// NOTE this is the getUserByEmail() funcion that the client (i.e. customer) requested but with a different name
 const emailCheck = function(queryEmail, sourceDatabase) {
   for (const userID in sourceDatabase) {
     if (sourceDatabase[userID].email === queryEmail) {
@@ -40,9 +40,10 @@ const urlOwnership = function(loginID, queryShortURL, sourceDatabase) {
 };
 
 // Login Status Check
-// Returns required user info object from database if client is logged in, undefined if otherwise. Returned data will be passed as a variable to the rendered HTML document
+// Returns the required user info object from database if user is logged in, or undefined if not 
+//Returned data will be passed as a variable to the rendered HTML document
 const loginCheck = function(loginID, sourceDatabase) {
-  return loginID ? sourceDatabase[loginID] : undefined;
+  return sourceDatabase[loginID] ? sourceDatabase[loginID] : undefined;
 };
 
 // User URL List

@@ -30,7 +30,7 @@ app.set('view engine', 'ejs');
 // /(root) => urls_login or urls_index
 // Root directory redirecting to "/login" (for unknown user) or "/urls" (for logged-in user)
 app.get('/', (req, res) => {
-  // "loginCheck" returns the appropriate user object if there is a cookie, undefined otherwise
+  // "loginCheck" returns the associated user object if "session.user_id" corresponds to an "id" in the user database, undefined otherwise
   const currentUser = loginCheck(req.session.user_id, userDatabase);
   // If there is NO user_id cookie, aka the client is not logged in
   !currentUser ? res.redirect('/login') : res.redirect('/urls');
@@ -101,12 +101,26 @@ app.get('/urls/:shortURL', (req, res) => {
 // /u/:shortURL => http:[longURL]
 // Short URL redirecting to its linked external URL
 app.get('/u/:shortURL', (req, res) => {
-  const queryShortURL = req.params.shortURL
+  let currentUser = loginCheck(req.session.user_id, userDatabase);
+  const queryShortURL = req.params.shortURL;
   if (!shortURLCheck(queryShortURL, urlDatabase)) {
     return res.redirect('/error/404');
   }
+  // If given a cookie but not registered, assigns an "id" property for stat tracking
+  if (req.session.user_id && !currentUser) {
+    currentUser = { id: req.session.user_id }; 
+  }
+  // If no cookie at all
+  if (!req.session.user_id) {
+    req.session.user_id = generateRandomString();
+    currentUser = { id: req.session.user_id };
+  }
   const longURL = urlDatabase[queryShortURL].longURL;
   res.redirect(longURL);
+  // Timestamping and populating a unique visitor list
+  urlDatabase[queryShortURL].timeStamps[Date.now()] = currentUser.id;
+  urlDatabase[queryShortURL].uniqueUsers[currentUser.id] = currentUser.id;
+  console.log(urlDatabase[queryShortURL]);
 });
 
 // /error/:code => /urls_error 
@@ -131,7 +145,12 @@ app.post('/urls', (req, res) => {
   const longURL = urlParser(req.body.longURL);
   // A randomly generated string is assigned as the short URL
   const shortURL = generateRandomString();
-  urlDatabase[shortURL] = { longURL: longURL, userID: currentUser.id }
+  urlDatabase[shortURL] = {
+    longURL: longURL,
+    userID: currentUser.id,
+    timeStamps: {},
+    uniqueUsers: {},
+  }
   res.redirect(`/urls/${shortURL}`);
 });
 
@@ -190,8 +209,13 @@ app.post('/register', (req, res) => {
 // Log Out
 // Clearing user cookie per user logout and redirecting to /urls 
 app.post('/logout', (req, res) => {
+  const currentUser = loginCheck(req.session.user_id, userDatabase);
+  // If the user is regerested
+  if (currentUser) {
     req.session = null;
-    res.redirect('/login');
+  }
+  res.redirect('/login');
+  // Else keeping the cookie in the non-registered user client for stat tracking
 });
 
 // Edit
