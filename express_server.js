@@ -86,12 +86,12 @@ app.get('/urls/:shortURL', (req, res) => {
   if (!currentUser) {
     return res.redirect('/error/401');
   }
-  // If the requested ishort URL s NOT in the database
+  // If the requested short URL is NOT in the database
   if (!shortURLCheck(queryShortURL, urlDatabase)) {
     return res.redirect('/error/404');
   }
   // If the requested short URL does NOT belong to the current user
-  if (urlDatabase[queryShortURL].userID !== currentUser.id) {
+  if (!urlOwnership(currentUser.id, queryShortURL, urlDatabase)) {
     return res.redirect('/error/403');
   }
   // Traffic stats and other info
@@ -125,7 +125,7 @@ app.get('/u/:shortURL', (req, res) => {
     if (!req.session.visitor_id) {
       req.session.visitor_id = generateRandomString();
     }
-    // Timestamping and populating a unique visitor list
+    // Timestamping and updating the unique visitor list
     const visitorID = req.session.visitor_id;
     urlDatabase[queryShortURL].timeStamps[Date()] = visitorID;
     urlDatabase[queryShortURL].uniqueUsers[visitorID] = visitorID;
@@ -137,7 +137,8 @@ app.get('/u/:shortURL', (req, res) => {
 });
 
 // /error/:code => /urls_error
-// Error message page with a relevant message per the "code" parameter from the redirected URL
+// Error message page with a relevant message in accordance with the the "code" parameter
+// provided from the redirected URL
 app.get('/error/:code', (req, res) => {
   const errorCode = req.params.code;
   const currentUser = loginCheck(req.session.user_id, userDatabase);
@@ -149,12 +150,13 @@ app.get('/error/:code', (req, res) => {
 //// POST Requests ////
 
 // Short URL Generation
-// Generating new data after user enters a new URL and redirecting to /urls/shortURL
+// Adding a new URL entry to database after user enters a new URL, then redirecting to /urls/shortURL
 app.post('/urls', (req, res) => {
   const currentUser = loginCheck(req.session.user_id, userDatabase);
   if (!currentUser) {
     return res.redirect('/error/401');
   }
+  // urlParser() appends an "http://" prefix to the URL provided if necessary
   const longURL = urlParser(req.body.longURL);
   // A randomly generated string is assigned as the short URL
   const shortURL = generateRandomString();
@@ -174,7 +176,7 @@ app.post('/login', (req, res) => {
   const logPassword = req.body.password;
   const templateVars = { user: undefined, inputStatus: 0, queryEmail: logEmail };
   // If the email provided is NOT in the user database, an in-browser error message is
-  // prompted via reading the "inputStatus" code
+  // prompted with respect to the "inputStatus" code
   if (!emailCheck(logEmail, userDatabase)) {
     templateVars.inputStatus = 1;
     return res.status(404).render('urls_login', templateVars);
@@ -235,7 +237,7 @@ app.post('/logout', (req, res) => {
 });
 
 // Edit
-// Updating URL database after user edits an existing URL
+// Updating URL database after an user edits an existing short URL
 app.put('/urls/:shortURL', (req, res) => {
   const currentUser = loginCheck(req.session.user_id, userDatabase);
   const shortURL = req.params.shortURL;
@@ -246,7 +248,6 @@ app.put('/urls/:shortURL', (req, res) => {
   if (!shortURLCheck(shortURL, urlDatabase) || !urlOwnership(currentUser.id, shortURL, urlDatabase)) {
     return res.redirect('/error/404');
   }
-  // urlParser() appends an "http://" suffix to the URL provided if necessary
   const newlongURL = urlParser(req.body.edit);
   urlDatabase[shortURL].longURL = newlongURL;
   res.redirect('/urls');

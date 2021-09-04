@@ -42,6 +42,7 @@ This project was created and published by the original uploader, AceFlanker as p
 - We, at TinyApp, really care about your privacy. On a daily basis, we look at the traffic log on your URL's edit page to make sure nobody has accessed it.
 - Of course, we already made sure they couldn't access your list or edit or delete your stuff in the first place. But, we are just making sure.
 - Every visitor clicking your Tiny URLs will have an anonymous id displayed in the traffic log, keeping you guessing if your crush has visited your Tiny URL.
+- Hashed passwords and cookies, but that's not really important.
 
 Thanks!
 

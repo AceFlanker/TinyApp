@@ -12,7 +12,7 @@ const generateRandomString = function() {
 
 // Email Check
 // Checks if email already exists in user database
-// NOTE this is the getUserByEmail() funcion that the client (i.e. customer) requested but with a different name
+// NOTE this is the getUserByEmail() funcion that the client (i.e. Lighthouse Labs) requested but with a different name
 const emailCheck = function(queryEmail, sourceDatabase) {
   for (const userID in sourceDatabase) {
     if (sourceDatabase[userID].email === queryEmail) {
@@ -59,11 +59,11 @@ const urlsPopulator = function(loginUserID, sourceDatabase) {
 };
 
 // URL Parser
-// Checks if provided URL contains an "http://" suffix and adds one if not
+// Checks if provided URL contains an "http://" prefix and adds one if not
 const urlParser = function(newLongURL) {
   // Negative check - RegExp that checks if the URL does NOT have a scheme/protocol specified
   const schemeNegCheck = /^([A-Za-z]+.)+[A-Z-a-z]+(\/?$|\/.+$)/;
-  // Checks if a protocol prefixes the new URL, if not, "http://" is added
+  // If a protocl prefix is absent, "http://" will be added
   return schemeNegCheck.test(newLongURL) ? 'http://' + newLongURL : newLongURL;
 };
 
