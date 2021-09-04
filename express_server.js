@@ -227,7 +227,7 @@ app.post('/register', (req, res) => {
 // Clearing user cookie per user logout and redirecting to /urls
 app.post('/logout', (req, res) => {
   const currentUser = loginCheck(req.session.user_id, userDatabase);
-  // If the user is regerested, clears the cookie
+  // If the user is registered, clears the cookie
   if (currentUser) {
     req.session = null;
   }
