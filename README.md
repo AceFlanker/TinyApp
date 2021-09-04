@@ -47,15 +47,15 @@ This project was created and published by the original uploader, AceFlanker as p
 Thanks!
 
 ## Presentation
-
+**TinyApp Homepage**
 !["Screenshot of TinyApp Homepage"](https://github.com/AceFlanker/TinyApp/blob/master/docs/Homepage.png)
-TinyApp Homepage
 <br>
+**The Dreaded 403**
 !["Screenshot of the Error 403 Page"](https://github.com/AceFlanker/TinyApp/blob/master/docs/403.png)
-The Dreaded 403
+**User-friendly Hint During Registration**
 <br>
 !["Screenshot of a Sign Up Error"](https://github.com/AceFlanker/TinyApp/blob/master/docs/email_alert.png)
-User-friendly Hint During Registration
+**Visitor Statistics**
 <br>
 !["Screenshot of The Edit Page"](https://github.com/AceFlanker/TinyApp/blob/master/docs/edit_page.png)
-Visitor Statistics
+
