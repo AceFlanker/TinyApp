@@ -236,6 +236,9 @@ app.post('/logout', (req, res) => {
   // somehow able to send a POST logout request via other means
 });
 
+
+//// PUT & DELETE Requests ////
+
 // Edit
 // Updating URL database after an user edits an existing short URL
 app.put('/urls/:shortURL', (req, res) => {
