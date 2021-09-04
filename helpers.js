@@ -8,7 +8,7 @@ const generateRandomString = function() {
     randStr += alphanumberic[randNum];
   }
   return randStr;
-}
+};
 
 // Email Check
 // Checks if email already exists in user database
@@ -40,7 +40,7 @@ const urlOwnership = function(loginID, queryShortURL, sourceDatabase) {
 };
 
 // Login Status Check
-// Returns the required user info object from database if user is logged in, or undefined if not 
+// Returns the required user info object from database if user is logged in, or undefined if not
 //Returned data will be passed as a variable to the rendered HTML document
 const loginCheck = function(loginID, sourceDatabase) {
   return sourceDatabase[loginID] ? sourceDatabase[loginID] : undefined;
@@ -56,7 +56,7 @@ const urlsPopulator = function(loginUserID, sourceDatabase) {
     }
   }
   return urlsObj;
-}
+};
 
 // URL Parser
 // Checks if provided URL contains an "http://" suffix and adds one if not
@@ -65,7 +65,7 @@ const urlParser = function(newLongURL) {
   const schemeNegCheck = /^([A-Za-z]+.)+[A-Z-a-z]+(\/?$|\/.+$)/;
   // Checks if a protocol prefixes the new URL, if not, "http://" is added
   return schemeNegCheck.test(newLongURL) ? 'http://' + newLongURL : newLongURL;
-}
+};
 
 module.exports = {
   generateRandomString,
@@ -75,4 +75,4 @@ module.exports = {
   loginCheck,
   urlsPopulator,
   urlParser
-}
+};
