@@ -30,11 +30,11 @@ This project was created and published by the original uploader, AceFlanker as p
 - Turns urls of any length in to a 6-character id (ex. http://localhost:8080/u/ehq3y7)
 - Keeps a list of all of your URL entries and for you only, as long as you are registered :)
 - Your favourite hub-series webiste (like GitHub) has changed their homepage address? No problem, TinyApp allows you to change the link as many times as you want! And delete them out right, of course.
-- Share your Tiny URLs to friends and family, impress them by showing your grandma typing out a web address without auto-completion!
+- Share your Tiny URLs to friends and family, impress them by showing how your grandma can type out a web address without auto-completion!
 
 ### Errors
 
-- Made a mistaking hacking someone else's TinyApp account? No worries, we will let you know what went wrong with a page dedicated to the type of your error, stating the reason why we are keeping some distance from you.
+- Made a mistaking hacking someone else's TinyApp account? No worries, we will let you know what went wrong with a page dedicated to the type of you rookie mistake, stating the reason why we are keeping some distance from you.
 - If your infractions are minor, like forgotting to type in your password or something, we will give a small alert message under the input field, instead of a silly page with a silly error message.
 
 ### What else? Hmm...piracy! No, p-r-i-v-a-c-y. Yes, privacy.
