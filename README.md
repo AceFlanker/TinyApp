@@ -34,14 +34,14 @@ This project was created and published by the original uploader, AceFlanker as p
 
 ### Errors
 
-- Made a mistaking hacking someone else's TinyApp account? No worries, we will let you know what went wrong with a page dedicated to the type of you rookie mistake, stating the reason why we are keeping some distance from you.
+- Made a mistaking hacking someone else's TinyApp account? No worries, we will let you know what went wrong with a page dedicated to the type of rookie mistake you just made, stating the reason why we are keeping some distance from you.
 - If your infractions are minor, like forgotting to type in your password or something, we will give a small alert message under the input field, instead of a silly page with a silly error message.
 
 ### What else? Hmm...piracy! No, p-r-i-v-a-c-y. Yes, privacy.
 
-- We, at TinyApp, really care about your privacy. On a daily basis, we look at the traffic log on your URL's edit page to make sure nobody has accessed it.
+- We, at TinyApp, really care about your privacy. On a daily basis, we look at the traffic log on your URL's edit page to make sure nobody else has accessed it.
 - Of course, we already made sure they couldn't access your list or edit or delete your stuff in the first place. But, we are just making sure.
-- Every visitor clicking your Tiny URLs will have an anonymous id displayed in the traffic log, keeping you guessing if your crush has visited your Tiny URL.
+- Every visitor clicking your Tiny URLs will have an anonymous ID displayed in the traffic log, keeping you guessing if your crush has visited your Tiny URL.
 - Hashed passwords and cookies, but that's not really important.
 
 Thanks!
